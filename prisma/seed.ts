@@ -1,5 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, AuditStatus } from "@prisma/client";
 import hotelData from "./seed-data/hotel.json";
+import auditData from "./seed-data/audit-results.json";
 
 const prisma = new PrismaClient();
 
@@ -17,10 +18,7 @@ async function main() {
   const hotel = await prisma.hotel.create({ data: hotelData });
   console.log(`Created hotel: ${hotel.name} (${hotel.id})`);
 
-  // Audit data will be added by Phase B seed below
   try {
-    const auditDataModule = await import("./seed-data/audit-results.json");
-    const auditData = auditDataModule.default || auditDataModule;
 
     if (auditData && auditData.audit) {
       console.log("Seeding audit data...");
@@ -28,7 +26,7 @@ async function main() {
       const audit = await prisma.audit.create({
         data: {
           hotelId: hotel.id,
-          status: auditData.audit.status,
+          status: auditData.audit.status as AuditStatus,
           config: auditData.audit.config,
           summary: auditData.audit.summary,
           analysis: auditData.audit.analysis,

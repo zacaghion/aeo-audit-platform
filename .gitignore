@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env.production
+.env.development
+postgres-data/
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+*.log

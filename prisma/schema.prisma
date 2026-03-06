@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Hotel {
+  id          String   @id @default(cuid())
+  name        String
+  website     String?
+  location    String
+  type        String
+  features    String
+  competitors String
+  priceRange  String?
+  brief       String   @db.Text
+  createdAt   DateTime @default(now())
+  audits      Audit[]
+}
+
+model Audit {
+  id          String      @id @default(cuid())
+  hotelId     String
+  hotel       Hotel       @relation(fields: [hotelId], references: [id])
+  status      AuditStatus @default(PENDING)
+  config      Json
+  summary     Json?
+  analysis    Json?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+  prompts     Prompt[]
+}
+
+model Prompt {
+  id              String     @id @default(cuid())
+  auditId         String
+  audit           Audit      @relation(fields: [auditId], references: [id])
+  promptNumber    Int
+  promptText      String     @db.Text
+  category        String
+  intent          String     @db.Text
+  expectedMention String
+  createdAt       DateTime   @default(now())
+  responses       Response[]
+}
+
+model Response {
+  id                   String   @id @default(cuid())
+  promptId             String
+  prompt               Prompt   @relation(fields: [promptId], references: [id])
+  provider             String
+  model                String
+  answer               String   @db.Text
+  hotelMentioned       Boolean  @default(false)
+  mentionPosition      String?
+  mentionSentiment     String?
+  competitorsMentioned Json     @default("[]")
+  competitorCount      Int      @default(0)
+  answerLength         Int      @default(0)
+  latencyMs            Int?
+  status               String   @default("pending")
+  errorMessage         String?
+  rawResponse          Json?
+  createdAt            DateTime @default(now())
+}
+
+model ApiKey {
+  id           String    @id @default(cuid())
+  provider     String    @unique
+  encryptedKey String    @db.Text
+  iv           String
+  authTag      String
+  isValid      Boolean   @default(true)
+  lastTestedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+enum AuditStatus {
+  PENDING
+  GENERATING_PROMPTS
+  QUERYING
+  ANALYZING
+  COMPLETE
+  ERROR
+}

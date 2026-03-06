@@ -1,0 +1,49 @@
+import { getApiKey } from "./base";
+import { SYSTEM_PROMPT } from "./types";
+import type { AIQueryResult } from "@/types";
+
+const MODEL = "grok-3";
+
+export async function queryGrok(prompt: string): Promise<AIQueryResult> {
+  const apiKey = await getApiKey("grok");
+  if (!apiKey) throw new Error("Grok API key not configured");
+
+  const start = Date.now();
+  const res = await fetch("https://api.x.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 4096,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || "Grok API error");
+
+  const answer = data.choices?.[0]?.message?.content || "";
+  return { answer, latencyMs: Date.now() - start, rawResponse: data };
+}
+
+export async function testGrokKey(apiKey: string): Promise<boolean> {
+  const res = await fetch("https://api.x.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 5,
+      messages: [{ role: "user", content: "hi" }],
+    }),
+  });
+  return res.ok;
+}

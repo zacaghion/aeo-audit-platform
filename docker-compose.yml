@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: aeo_audit
+      POSTGRES_USER: aeo
+      POSTGRES_PASSWORD: aeopass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aeo -d aeo_audit"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://aeo:aeopass@db:5432/aeo_audit
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - appdata:/app/data
+    entrypoint: ["/app/scripts/entrypoint.sh"]
+
+volumes:
+  pgdata:
+  appdata:

@@ -37,8 +37,8 @@ export function RawDataTab({ prompts }: RawDataProps) {
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const categories = [...new Set(prompts.map((p) => p.category))];
-  const providers = [...new Set(prompts.flatMap((p) => p.responses.map((r) => r.provider)))];
+  const categories = Array.from(new Set(prompts.map((p) => p.category)));
+  const providers = Array.from(new Set(prompts.flatMap((p) => p.responses.map((r) => r.provider))));
 
   const rows = useMemo(() => {
     const all: Array<{

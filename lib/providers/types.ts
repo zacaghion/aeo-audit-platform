@@ -27,7 +27,7 @@ export const PROVIDER_INFO: Record<
   },
   gemini: {
     label: "Gemini (Google)",
-    model: "gemini-2.0-flash",
+    model: "gemini-2.5-flash",
     keyUrl: "https://aistudio.google.com/apikey",
     costPer100: "~$1.75",
   },

@@ -217,7 +217,7 @@ function getModelForProvider(provider: ProviderName): string {
   const models: Record<ProviderName, string> = {
     claude: "claude-sonnet-4-20250514",
     chatgpt: "gpt-4o-mini",
-    gemini: "gemini-2.0-flash",
+    gemini: "gemini-2.5-flash",
     perplexity: "sonar",
     grok: "grok-3-mini-fast",
     deepseek: "deepseek-chat",

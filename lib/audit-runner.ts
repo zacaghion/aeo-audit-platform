@@ -26,7 +26,7 @@ export async function runAudit(auditId: string) {
   try {
     const audit = await prisma.audit.findUnique({
       where: { id: auditId },
-      include: { hotel: true },
+      include: { brand: true },
     });
     if (!audit) throw new Error("Audit not found");
 
@@ -36,8 +36,8 @@ export async function runAudit(auditId: string) {
       categories: Record<string, number>;
     };
 
-    const hotel = audit.hotel;
-    const competitors = hotel.competitors.split(/[,;]/).map((c: string) => c.trim()).filter(Boolean);
+    const brand = audit.brand;
+    const competitors = brand.competitors.split(/[,;]/).map((c: string) => c.trim()).filter(Boolean);
 
     // Validate provider keys
     const validProviders: { name: ProviderName; key: string }[] = [];
@@ -62,12 +62,12 @@ export async function runAudit(auditId: string) {
 
     const generatedPrompts = generatePrompts(
       {
-        name: hotel.name,
-        location: hotel.location,
-        type: hotel.type,
-        features: hotel.features,
-        competitors: hotel.competitors,
-        priceRange: hotel.priceRange,
+        name: brand.name,
+        location: brand.location,
+        type: brand.category,
+        features: brand.features,
+        competitors: brand.competitors,
+        priceRange: brand.priceRange,
       },
       config.categories
     );
@@ -104,10 +104,10 @@ export async function runAudit(auditId: string) {
           const start = Date.now();
 
           // Temporarily set the key for this call by using a direct fetch
-          const result = await queryWithKey(name, key, promptData.promptText);
+          const result = await queryWithKey(name, key, promptData.promptText, brand);
           const latencyMs = Date.now() - start;
 
-          const analysis = analyzeResponse(result.answer, competitors, hotel.name);
+          const analysis = analyzeResponse(result.answer, competitors, brand.name);
 
           await prisma.response.create({
             data: {
@@ -115,7 +115,7 @@ export async function runAudit(auditId: string) {
               provider: name,
               model: getModelForProvider(name),
               answer: result.answer,
-              hotelMentioned: analysis.hotelMentioned,
+              brandMentioned: analysis.brandMentioned,
               mentionPosition: analysis.mentionPosition,
               mentionSentiment: analysis.mentionSentiment,
               competitorsMentioned: analysis.competitorsMentioned,
@@ -166,7 +166,7 @@ export async function runAudit(auditId: string) {
         category: p.category,
         responses: p.responses.filter((r) => r.status === "success").map((r) => ({
           provider: r.provider,
-          hotelMentioned: r.hotelMentioned,
+          brandMentioned: r.brandMentioned,
           answerLength: r.answerLength,
         })),
       }));
@@ -225,14 +225,18 @@ function getModelForProvider(provider: ProviderName): string {
   return models[provider];
 }
 
-const SYSTEM_PROMPT = `You are a helpful AI assistant answering a traveler's query about hotels. Answer naturally and thoroughly based on your knowledge. Be specific with hotel names, prices, locations, and details. If you recommend specific hotels, explain why. If asked about a specific hotel, give honest pros and cons.`;
+function getRunnerSystemPrompt(brand: { name: string; category: string; location: string }): string {
+  return `You are a helpful AI assistant answering a consumer's query about ${brand.category.toLowerCase()} businesses${brand.location ? ` in ${brand.location}` : ""}. Answer naturally and thoroughly based on your knowledge. Be specific with names, prices, locations, and details. If you recommend specific businesses, explain why. If asked about a specific business, give honest pros and cons.`;
+}
 
 async function queryWithKey(
   provider: ProviderName,
   apiKey: string,
-  prompt: string
+  prompt: string,
+  brand: { name: string; category: string; location: string }
 ): Promise<{ answer: string; rawResponse: Record<string, unknown> }> {
   const model = getModelForProvider(provider);
+  const systemPrompt = getRunnerSystemPrompt(brand);
 
   if (provider === "claude") {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -245,7 +249,7 @@ async function queryWithKey(
       body: JSON.stringify({
         model,
         max_tokens: 1024,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -262,7 +266,7 @@ async function queryWithKey(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { maxOutputTokens: 1024 },
         }),
@@ -292,7 +296,7 @@ async function queryWithKey(
       model,
       max_tokens: 1024,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
       ],
     }),

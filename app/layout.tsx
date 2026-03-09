@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AEO Audit Platform",
-  description: "Answer Engine Optimization audits for hotels",
+  description: "Answer Engine Optimization audits for brands & businesses",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -6,14 +6,14 @@ import { runAudit } from "@/lib/audit-runner";
 
 export async function GET() {
   const audits = await prisma.audit.findMany({
-    include: { hotel: true },
+    include: { brand: true },
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(audits);
 }
 
 export async function POST(req: NextRequest) {
-  const { hotel, promptCount, providers } = await req.json();
+  const { brand, promptCount, providers } = await req.json();
 
   const totalPrompts = promptCount || 100;
   const scale = totalPrompts / 100;
@@ -28,22 +28,22 @@ export async function POST(req: NextRequest) {
     Dining: Math.round(5 * scale),
   };
 
-  const hotelRecord = await prisma.hotel.create({
+  const brandRecord = await prisma.brand.create({
     data: {
-      name: hotel.name,
-      website: hotel.website || null,
-      location: hotel.location,
-      type: hotel.type || "",
-      features: hotel.features || "",
-      competitors: hotel.competitors || "",
-      priceRange: hotel.priceRange || null,
-      brief: hotel.brief,
+      name: brand.name,
+      website: brand.website || null,
+      location: brand.location,
+      category: brand.type || "",
+      features: brand.features || "",
+      competitors: brand.competitors || "",
+      priceRange: brand.priceRange || null,
+      brief: brand.brief,
     },
   });
 
   const audit = await prisma.audit.create({
     data: {
-      hotelId: hotelRecord.id,
+      brandId: brandRecord.id,
       status: "PENDING",
       config: { promptCount: totalPrompts, providers, categories },
     },
@@ -54,5 +54,5 @@ export async function POST(req: NextRequest) {
     console.error("Audit runner failed:", e);
   });
 
-  return NextResponse.json({ auditId: audit.id, hotelId: hotelRecord.id });
+  return NextResponse.json({ auditId: audit.id, brandId: brandRecord.id });
 }

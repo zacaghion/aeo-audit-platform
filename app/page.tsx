@@ -18,7 +18,7 @@ const statusColors: Record<string, string> = {
 
 export default async function DashboardPage() {
   const audits = await prisma.audit.findMany({
-    include: { hotel: true, prompts: { include: { responses: true } } },
+    include: { brand: true, prompts: { include: { responses: true } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -107,7 +107,7 @@ export default async function DashboardPage() {
       <Card>
         <CardHeader>
           <CardTitle>Recent Audits</CardTitle>
-          <CardDescription>All AEO audits across your hotel portfolio</CardDescription>
+          <CardDescription>All AEO audits across your brands</CardDescription>
         </CardHeader>
         <CardContent>
           {audits.length === 0 ? (
@@ -129,7 +129,7 @@ export default async function DashboardPage() {
                   >
                     <div className="space-y-1">
                       <div className="flex items-center space-x-3">
-                        <span className="font-medium">{audit.hotel.name}</span>
+                        <span className="font-medium">{audit.brand.name}</span>
                         <Badge variant={statusColors[audit.status] as "default"}>
                           {audit.status === "QUERYING"
                             ? `Querying ${totalResponses}/${maxResponses}`
@@ -137,7 +137,7 @@ export default async function DashboardPage() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {audit.hotel.location} &middot; {audit.prompts.length} prompts &middot;{" "}
+                        {audit.brand.location} &middot; {audit.prompts.length} prompts &middot;{" "}
                         {new Date(audit.createdAt).toLocaleDateString()}
                       </p>
                     </div>

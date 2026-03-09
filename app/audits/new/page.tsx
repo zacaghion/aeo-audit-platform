@@ -30,7 +30,7 @@ export default function NewAuditPage() {
   const [name, setName] = useState("");
   const [website, setWebsite] = useState("");
   const [location, setLocation] = useState("");
-  const [hotelType, setHotelType] = useState("");
+  const [businessType, setBusinessType] = useState("");
   const [priceRange, setPriceRange] = useState("");
   const [features, setFeatures] = useState("");
   const [competitorInput, setCompetitorInput] = useState("");
@@ -47,11 +47,11 @@ export default function NewAuditPage() {
   }, []);
 
   useEffect(() => {
-    if (name && location && hotelType) {
-      const auto = `${name} is a ${hotelType} located in ${location}.${priceRange ? ` Room rates: ${priceRange}.` : ""}${features ? ` Key features: ${features}.` : ""}${competitors.length ? ` Key competitors: ${competitors.join(", ")}.` : ""}`;
+    if (name && location && businessType) {
+      const auto = `${name} is a ${businessType} located in ${location}.${priceRange ? ` Room rates: ${priceRange}.` : ""}${features ? ` Key features: ${features}.` : ""}${competitors.length ? ` Key competitors: ${competitors.join(", ")}.` : ""}`;
       setBrief(auto);
     }
-  }, [name, location, hotelType, priceRange, features, competitors]);
+  }, [name, location, businessType, priceRange, features, competitors]);
 
   const addCompetitor = () => {
     const c = competitorInput.trim();
@@ -71,7 +71,7 @@ export default function NewAuditPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          hotel: { name, website, location, type: hotelType, priceRange, features, competitors: competitors.join(", "), brief },
+          brand: { name, website, location, category: businessType, priceRange, features, competitors: competitors.join(", "), brief },
           promptCount: parseInt(promptCount),
           providers: selectedProviders,
         }),
@@ -102,14 +102,14 @@ export default function NewAuditPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Hotel Details</CardTitle>
-          <CardDescription>Enter information about the hotel to audit</CardDescription>
+          <CardTitle>Brand Details</CardTitle>
+          <CardDescription>Enter information about the brand or business to audit</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Hotel Name *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ad Lib Hotel Bangkok" />
+              <Label>Brand / Business Name *</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ad Lib Hotel Bangkok" />
             </div>
             <div className="space-y-2">
               <Label>Website</Label>
@@ -122,8 +122,8 @@ export default function NewAuditPage() {
               <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Bangkok, Thailand" />
             </div>
             <div className="space-y-2">
-              <Label>Type</Label>
-              <Input value={hotelType} onChange={(e) => setHotelType(e.target.value)} placeholder="Boutique design hotel" />
+              <Label>Business Type</Label>
+              <Input value={businessType} onChange={(e) => setBusinessType(e.target.value)} placeholder="e.g. Hotel, Restaurant, SaaS" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -163,7 +163,7 @@ export default function NewAuditPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Hotel Brief *</Label>
+            <Label>Brand Brief *</Label>
             <Textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={6} />
           </div>
         </CardContent>

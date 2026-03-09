@@ -8,12 +8,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Hotel {
+model Brand {
   id          String   @id @default(cuid())
   name        String
   website     String?
   location    String
-  type        String
+  category    String
   features    String
   competitors String
   priceRange  String?
@@ -24,8 +24,8 @@ model Hotel {
 
 model Audit {
   id          String      @id @default(cuid())
-  hotelId     String
-  hotel       Hotel       @relation(fields: [hotelId], references: [id])
+  brandId     String
+  brand       Brand       @relation(fields: [brandId], references: [id])
   status      AuditStatus @default(PENDING)
   config      Json
   summary     Json?
@@ -56,7 +56,7 @@ model Response {
   provider             String
   model                String
   answer               String   @db.Text
-  hotelMentioned       Boolean  @default(false)
+  brandMentioned       Boolean  @default(false)
   mentionPosition      String?
   mentionSentiment     String?
   competitorsMentioned Json     @default("[]")

@@ -19,7 +19,7 @@ export interface AIProviderClient {
 }
 
 export interface ResponseAnalysis {
-  hotelMentioned: boolean;
+  brandMentioned: boolean;
   mentionPosition: string | null;
   mentionSentiment: string | null;
   competitorsMentioned: string[];

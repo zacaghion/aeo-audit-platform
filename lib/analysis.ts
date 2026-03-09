@@ -5,8 +5,8 @@ const POSITION_PATTERNS = [
   { pattern: /(?:^|\n)\s*(?:4[\.\):]|fourth|#4)\s/i, position: "4th" },
 ];
 
-function buildHotelPatterns(hotelName: string): string[] {
-  const name = hotelName.toLowerCase().trim();
+function buildBrandPatterns(brandName: string): string[] {
+  const name = brandName.toLowerCase().trim();
   const patterns = [name];
   const noDash = name.replace(/-/g, " ");
   const dashed = name.replace(/\s+/g, "-");
@@ -24,9 +24,9 @@ function buildHotelPatterns(hotelName: string): string[] {
 export function analyzeResponse(
   answer: string,
   competitors: string[],
-  hotelName?: string
+  brandName?: string
 ): {
-  hotelMentioned: boolean;
+  brandMentioned: boolean;
   mentionPosition: string | null;
   mentionSentiment: string | null;
   competitorsMentioned: string[];
@@ -34,25 +34,25 @@ export function analyzeResponse(
   answerLength: number;
 } {
   const lowerAnswer = answer.toLowerCase();
-  const hotelPatterns = hotelName
-    ? buildHotelPatterns(hotelName)
-    : buildHotelPatterns("Ad Lib Hotel Bangkok");
-  const hotelMentioned = hotelPatterns.some((p) => lowerAnswer.includes(p));
+  const brandPatterns = brandName
+    ? buildBrandPatterns(brandName)
+    : buildBrandPatterns("Ad Lib Hotel Bangkok");
+  const brandMentioned = brandPatterns.some((p) => lowerAnswer.includes(p));
 
   let mentionPosition: string | null = null;
-  if (hotelMentioned) {
-    const mentionIdx = hotelPatterns.reduce((min, p) => {
+  if (brandMentioned) {
+    const mentionIdx = brandPatterns.reduce((min, p) => {
       const idx = lowerAnswer.indexOf(p);
       return idx >= 0 && idx < min ? idx : min;
     }, Infinity);
 
     const beforeMention = answer.substring(0, mentionIdx);
-    const hotelNamesBefore = countHotelNamesBefore(beforeMention, competitors);
+    const brandNamesBefore = countBrandNamesBefore(beforeMention, competitors);
 
-    if (hotelNamesBefore === 0) mentionPosition = "1st";
-    else if (hotelNamesBefore === 1) mentionPosition = "2nd";
-    else if (hotelNamesBefore === 2) mentionPosition = "3rd";
-    else if (hotelNamesBefore === 3) mentionPosition = "4th";
+    if (brandNamesBefore === 0) mentionPosition = "1st";
+    else if (brandNamesBefore === 1) mentionPosition = "2nd";
+    else if (brandNamesBefore === 2) mentionPosition = "3rd";
+    else if (brandNamesBefore === 3) mentionPosition = "4th";
     else mentionPosition = "5th+";
 
     for (const { pattern, position } of POSITION_PATTERNS) {
@@ -61,20 +61,20 @@ export function analyzeResponse(
           Math.max(0, mentionIdx - 200),
           mentionIdx + 200
         );
-        if (hotelPatterns.some((p) => section.toLowerCase().includes(p))) {
+        if (brandPatterns.some((p) => section.toLowerCase().includes(p))) {
           mentionPosition = position;
           break;
         }
       }
     }
 
-    if (hotelNamesBefore > 4 && mentionPosition === "5th+") {
+    if (brandNamesBefore > 4 && mentionPosition === "5th+") {
       mentionPosition = "passing";
     }
   }
 
   let mentionSentiment: string | null = null;
-  if (hotelMentioned) {
+  if (brandMentioned) {
     mentionSentiment = analyzeSentimentHeuristic(answer);
   }
 
@@ -92,7 +92,7 @@ export function analyzeResponse(
   }
 
   return {
-    hotelMentioned,
+    brandMentioned,
     mentionPosition,
     mentionSentiment,
     competitorsMentioned: foundCompetitors,
@@ -101,7 +101,7 @@ export function analyzeResponse(
   };
 }
 
-function countHotelNamesBefore(text: string, competitors: string[]): number {
+function countBrandNamesBefore(text: string, competitors: string[]): number {
   const lower = text.toLowerCase();
   let count = 0;
   for (const comp of competitors) {
@@ -136,7 +136,7 @@ function analyzeSentimentHeuristic(answer: string): string {
 }
 
 export function computeAuditSummary(
-  prompts: Array<{ category: string; responses: Array<{ provider: string; hotelMentioned: boolean; answerLength: number }> }>
+  prompts: Array<{ category: string; responses: Array<{ provider: string; brandMentioned: boolean; answerLength: number }> }>
 ): {
   totalPrompts: number;
   totalResponses: number;
@@ -178,7 +178,7 @@ export function computeAuditSummary(
         crossTab[prompt.category][resp.provider] = 0;
       }
 
-      if (resp.hotelMentioned) {
+      if (resp.brandMentioned) {
         totalMentions++;
         providerMentions[resp.provider].mentioned++;
         categoryMentions[prompt.category].mentioned++;

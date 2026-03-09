@@ -9,7 +9,7 @@ export default async function AuditDetailPage({ params }: { params: { id: string
   const audit = await prisma.audit.findUnique({
     where: { id: params.id },
     include: {
-      hotel: true,
+      brand: true,
       prompts: {
         orderBy: { promptNumber: "asc" },
         include: { responses: true },

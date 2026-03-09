@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 interface AuditData {
   id: string;
   status: string;
-  hotel: { name: string; location: string };
+  brand: { name: string; location: string };
 }
 
 interface ProgressData {
@@ -69,13 +69,13 @@ export function AuditProgress({ audit }: { audit: AuditData }) {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold">{audit.hotel.name}</h1>
+          <h1 className="text-3xl font-bold">{audit.brand.name}</h1>
           <Badge variant="secondary">
             <Loader2 className="mr-1 h-3 w-3 animate-spin" />
             {STATUS_LABELS[progress?.status || audit.status] || audit.status}
           </Badge>
         </div>
-        <p className="text-muted-foreground mt-1">{audit.hotel.location}</p>
+        <p className="text-muted-foreground mt-1">{audit.brand.location}</p>
       </div>
 
       <Card>

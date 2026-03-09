@@ -1,4 +1,8 @@
-export const SYSTEM_PROMPT = `You are a helpful AI assistant answering a traveler's query about hotels in Bangkok, Thailand. Answer naturally and thoroughly based on your knowledge. Be specific with hotel names, prices, locations, and details. If you recommend specific hotels, explain why. If asked about a specific hotel, give honest pros and cons.`;
+export const SYSTEM_PROMPT = `You are a helpful AI assistant answering a consumer's query. Answer naturally and thoroughly based on your knowledge. Be specific with names, prices, locations, and details. If you recommend specific businesses or brands, explain why. If asked about a specific business, give honest pros and cons.`;
+
+export function getSystemPrompt(brand: { name: string; category: string; location: string }): string {
+  return `You are a helpful AI assistant answering a consumer's query about ${brand.category.toLowerCase()} businesses${brand.location ? ` in ${brand.location}` : ""}. Answer naturally and thoroughly based on your knowledge. Be specific with names, prices, locations, and details. If you recommend specific ${brand.category.toLowerCase()} businesses, explain why. If asked about a specific business, give honest pros and cons.`;
+}
 
 export const PROVIDERS = ["claude", "chatgpt", "perplexity", "gemini", "grok", "deepseek"] as const;
 export type ProviderName = (typeof PROVIDERS)[number];

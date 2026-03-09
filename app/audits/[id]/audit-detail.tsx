@@ -16,7 +16,7 @@ interface AuditData {
   summary: AuditSummary | null;
   analysis: AnalysisOutput | null;
   completedAt: string | null;
-  hotel: { name: string; location: string; competitors: string };
+  brand: { name: string; location: string; competitors: string };
   prompts: Array<{
     id: string;
     promptNumber: number;
@@ -29,7 +29,7 @@ interface AuditData {
       provider: string;
       model: string;
       answer: string;
-      hotelMentioned: boolean;
+      brandMentioned: boolean;
       mentionPosition: string | null;
       mentionSentiment: string | null;
       competitorsMentioned: string[];
@@ -50,7 +50,7 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `aeo-audit-${audit.hotel.name.replace(/\s+/g, "-").toLowerCase()}.xlsx`;
+    a.download = `aeo-audit-${audit.brand.name.replace(/\s+/g, "-").toLowerCase()}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -60,12 +60,12 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">{audit.hotel.name}</h1>
+            <h1 className="text-3xl font-bold">{audit.brand.name}</h1>
             <Badge variant={audit.status === "COMPLETE" ? "success" : "secondary"}>
               {audit.status.replace("_", " ")}
             </Badge>
           </div>
-          <p className="text-muted-foreground mt-1">{audit.hotel.location}</p>
+          <p className="text-muted-foreground mt-1">{audit.brand.location}</p>
         </div>
         {audit.status === "COMPLETE" && (
           <Button onClick={handleExport} variant="outline">

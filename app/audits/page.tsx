@@ -9,7 +9,7 @@ import { Plus } from "lucide-react";
 
 export default async function AuditsListPage() {
   const audits = await prisma.audit.findMany({
-    include: { hotel: true, prompts: { include: { responses: true } } },
+    include: { brand: true, prompts: { include: { responses: true } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -32,13 +32,13 @@ export default async function AuditsListPage() {
                 <CardContent className="flex items-center justify-between p-4">
                   <div>
                     <div className="flex items-center gap-3">
-                      <span className="font-semibold text-lg">{audit.hotel.name}</span>
+                      <span className="font-semibold text-lg">{audit.brand.name}</span>
                       <Badge variant={audit.status === "COMPLETE" ? "success" : audit.status === "ERROR" ? "destructive" : "secondary"}>
                         {audit.status.replace("_", " ")}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {audit.hotel.location} &middot; {audit.prompts.length} prompts &middot; {totalResp} responses
+                      {audit.brand.location} &middot; {audit.prompts.length} prompts &middot; {totalResp} responses
                     </p>
                   </div>
                   <div className="text-right font-mono">

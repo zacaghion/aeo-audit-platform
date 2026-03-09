@@ -7,7 +7,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const audit = await prisma.audit.findUnique({
     where: { id: params.id },
     include: {
-      hotel: true,
+      brand: true,
       prompts: {
         orderBy: { promptNumber: "asc" },
         include: { responses: true },

@@ -30,7 +30,7 @@ interface Props {
       category: string;
       responses: Array<{
         provider: string;
-        hotelMentioned: boolean;
+        brandMentioned: boolean;
         competitorsMentioned: string[];
       }>;
     }>;

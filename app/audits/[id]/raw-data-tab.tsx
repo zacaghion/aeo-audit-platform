@@ -18,7 +18,7 @@ interface RawDataProps {
       provider: string;
       model: string;
       answer: string;
-      hotelMentioned: boolean;
+      brandMentioned: boolean;
       mentionPosition: string | null;
       mentionSentiment: string | null;
       competitorsMentioned: string[];
@@ -49,7 +49,7 @@ export function RawDataTab({ prompts }: RawDataProps) {
       provider: string;
       model: string;
       answer: string;
-      hotelMentioned: boolean;
+      brandMentioned: boolean;
       mentionPosition: string | null;
       mentionSentiment: string | null;
       competitorsMentioned: string[];
@@ -62,8 +62,8 @@ export function RawDataTab({ prompts }: RawDataProps) {
       for (const r of p.responses) {
         if (categoryFilter !== "all" && p.category !== categoryFilter) continue;
         if (providerFilter !== "all" && r.provider !== providerFilter) continue;
-        if (mentionFilter === "yes" && !r.hotelMentioned) continue;
-        if (mentionFilter === "no" && r.hotelMentioned) continue;
+        if (mentionFilter === "yes" && !r.brandMentioned) continue;
+        if (mentionFilter === "no" && r.brandMentioned) continue;
 
         all.push({
           key: r.id,
@@ -141,8 +141,8 @@ export function RawDataTab({ prompts }: RawDataProps) {
                 <TableCell><Badge variant="outline" className="text-xs">{row.category}</Badge></TableCell>
                 <TableCell className="capitalize">{row.provider}</TableCell>
                 <TableCell>
-                  <Badge variant={row.hotelMentioned ? "success" : "destructive"}>
-                    {row.hotelMentioned ? "Yes" : "No"}
+                  <Badge variant={row.brandMentioned ? "success" : "destructive"}>
+                    {row.brandMentioned ? "Yes" : "No"}
                   </Badge>
                 </TableCell>
                 <TableCell className="font-mono text-xs">{row.mentionPosition || "—"}</TableCell>

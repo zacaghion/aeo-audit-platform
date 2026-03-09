@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const audit = await prisma.audit.findUnique({
     where: { id: auditId },
     include: {
-      hotel: true,
+      brand: true,
       prompts: {
         orderBy: { promptNumber: "asc" },
         include: { responses: true },
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
         "Expected Mention": p.expectedMention,
         Provider: r.provider,
         "AI Answer": r.answer,
-        "Hotel Mentioned": r.hotelMentioned ? "Yes" : "No",
+        "Brand Mentioned": r.brandMentioned ? "Yes" : "No",
         Position: r.mentionPosition || "",
         Sentiment: r.mentionSentiment || "",
         "Competitors Mentioned": (r.competitorsMentioned as string[]).join(", "),
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    fileName: `aeo-audit-${audit.hotel.name.replace(/\s+/g, "-").toLowerCase()}.xlsx`,
+    fileName: `aeo-audit-${audit.brand.name.replace(/\s+/g, "-").toLowerCase()}.xlsx`,
     sheets: {
       "Raw Data": rows,
       "Summary": audit.summary,

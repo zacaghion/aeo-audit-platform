@@ -1,12 +1,12 @@
 import { PrismaClient, AuditStatus } from "@prisma/client";
-import hotelData from "./seed-data/hotel.json";
+import brandData from "./seed-data/brand.json";
 import auditData from "./seed-data/audit-results.json";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const existing = await prisma.hotel.findFirst({
-    where: { name: hotelData.name },
+  const existing = await prisma.brand.findFirst({
+    where: { name: brandData.name },
   });
 
   if (existing) {
@@ -14,9 +14,9 @@ async function main() {
     return;
   }
 
-  console.log("Seeding hotel data...");
-  const hotel = await prisma.hotel.create({ data: hotelData });
-  console.log(`Created hotel: ${hotel.name} (${hotel.id})`);
+  console.log("Seeding brand data...");
+  const brand = await prisma.brand.create({ data: brandData });
+  console.log(`Created brand: ${brand.name} (${brand.id})`);
 
   try {
 
@@ -25,7 +25,7 @@ async function main() {
 
       const audit = await prisma.audit.create({
         data: {
-          hotelId: hotel.id,
+          brandId: brand.id,
           status: auditData.audit.status as AuditStatus,
           config: auditData.audit.config,
           summary: auditData.audit.summary,
@@ -55,7 +55,7 @@ async function main() {
               provider: respData.provider,
               model: respData.model,
               answer: respData.answer,
-              hotelMentioned: respData.hotelMentioned,
+              brandMentioned: respData.brandMentioned,
               mentionPosition: respData.mentionPosition,
               mentionSentiment: respData.mentionSentiment,
               competitorsMentioned: respData.competitorsMentioned,

@@ -97,13 +97,22 @@ export async function runAudit(auditId: string) {
       const promptData = generatedPrompts.find((p) => p.promptNumber === promptRecord.promptNumber);
       if (!promptData) continue;
 
-      // Query all providers in parallel for each prompt
-      const providerCalls = validProviders.map(async ({ name, key }) => {
-        try {
-          const queryFn = providerQueryMap[name];
-          const start = Date.now();
+      // Skip prompts that already have responses (resume support)
+      const existingResponses = await prisma.response.count({
+        where: { promptId: promptRecord.id },
+      });
+      if (existingResponses >= validProviders.length) continue;
 
-          // Temporarily set the key for this call by using a direct fetch
+      const existingProviders = existingResponses > 0
+        ? (await prisma.response.findMany({ where: { promptId: promptRecord.id }, select: { provider: true } })).map(r => r.provider)
+        : [];
+
+      // Query remaining providers in parallel for each prompt
+      const remainingProviders = validProviders.filter(p => !existingProviders.includes(p.name));
+
+      const providerCalls = remainingProviders.map(async ({ name, key }) => {
+        try {
+          const start = Date.now();
           const result = await queryWithKey(name, key, promptData.promptText, brand);
           const latencyMs = Date.now() - start;
 
@@ -141,7 +150,11 @@ export async function runAudit(auditId: string) {
         }
       });
 
-      await Promise.all(providerCalls);
+      try {
+        await Promise.all(providerCalls);
+      } catch (e) {
+        console.error(`Prompt ${promptRecord.promptNumber} batch failed:`, e);
+      }
       await sleep(RATE_LIMIT_DELAY_MS);
     }
 

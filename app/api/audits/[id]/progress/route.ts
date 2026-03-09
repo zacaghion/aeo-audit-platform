@@ -8,14 +8,27 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const stream = new ReadableStream({
     async start(controller) {
+      let closed = false;
       const send = (data: Record<string, unknown>) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          closed = true;
+        }
+      };
+
+      const closeStream = () => {
+        if (closed) return;
+        closed = true;
+        try { controller.close(); } catch { /* already closed */ }
       };
 
       let lastStatus = "";
       let lastCount = 0;
 
       const check = async () => {
+        if (closed) return false;
         try {
           const audit = await prisma.audit.findUnique({
             where: { id: params.id },
@@ -30,14 +43,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
           if (!audit) {
             send({ error: "Audit not found" });
-            controller.close();
+            closeStream();
             return false;
           }
 
           const allResponses = audit.prompts.flatMap((p) => p.responses);
           const totalResponses = allResponses.length;
 
-          // Provider-level breakdown
           const providerProgress: Record<string, { total: number; errors: number }> = {};
           for (const r of allResponses) {
             if (!providerProgress[r.provider]) {
@@ -63,12 +75,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
           }
 
           if (audit.status === "COMPLETE" || audit.status === "ERROR") {
-            controller.close();
+            closeStream();
             return false;
           }
           return true;
         } catch {
-          controller.close();
+          closeStream();
           return false;
         }
       };

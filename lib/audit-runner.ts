@@ -54,10 +54,10 @@ export async function runAudit(auditId: string) {
       return;
     }
 
-    // Phase 1: Generate prompts
-    await prisma.audit.update({
-      where: { id: auditId },
-      data: { status: "GENERATING_PROMPTS", startedAt: new Date() },
+    // Phase 1: Generate prompts (skip if already exist from a previous run)
+    let promptRecords = await prisma.prompt.findMany({
+      where: { auditId },
+      orderBy: { promptNumber: "asc" },
     });
 
     const generatedPrompts = generatePrompts(
@@ -72,20 +72,27 @@ export async function runAudit(auditId: string) {
       config.categories
     );
 
-    const promptRecords = await Promise.all(
-      generatedPrompts.map((p) =>
-        prisma.prompt.create({
-          data: {
-            auditId,
-            promptNumber: p.promptNumber,
-            promptText: p.promptText,
-            category: p.category,
-            intent: p.intent,
-            expectedMention: p.expectedMention,
-          },
-        })
-      )
-    );
+    if (promptRecords.length === 0) {
+      await prisma.audit.update({
+        where: { id: auditId },
+        data: { status: "GENERATING_PROMPTS", startedAt: new Date() },
+      });
+
+      promptRecords = await Promise.all(
+        generatedPrompts.map((p) =>
+          prisma.prompt.create({
+            data: {
+              auditId,
+              promptNumber: p.promptNumber,
+              promptText: p.promptText,
+              category: p.category,
+              intent: p.intent,
+              expectedMention: p.expectedMention,
+            },
+          })
+        )
+      );
+    }
 
     // Phase 2: Query providers
     await prisma.audit.update({

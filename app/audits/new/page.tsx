@@ -20,7 +20,7 @@ interface KeyStatus {
 }
 
 const PROVIDER_LABELS: Record<string, string> = {
-  claude: "Claude", chatgpt: "ChatGPT", perplexity: "Perplexity", gemini: "Gemini", grok: "Grok",
+  claude: "Claude", chatgpt: "ChatGPT", perplexity: "Perplexity", gemini: "Gemini", grok: "Grok", deepseek: "DeepSeek",
 };
 
 export default function NewAuditPage() {

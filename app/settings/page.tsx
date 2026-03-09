@@ -15,6 +15,7 @@ const PROVIDERS = [
   { id: "perplexity", label: "Perplexity", model: "sonar", keyUrl: "https://www.perplexity.ai/settings/api", cost: "~$3.00" },
   { id: "gemini", label: "Gemini (Google)", model: "gemini-2.0-flash", keyUrl: "https://aistudio.google.com/apikey", cost: "~$1.75" },
   { id: "grok", label: "Grok (xAI)", model: "grok-3-mini-fast", keyUrl: "https://console.x.ai", cost: "~$1.50" },
+  { id: "deepseek", label: "DeepSeek", model: "deepseek-chat", keyUrl: "https://platform.deepseek.com/api_keys", cost: "~$0.07" },
 ];
 
 interface KeyStatus {

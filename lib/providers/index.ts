@@ -3,6 +3,7 @@ import { queryChatGPT, testChatGPTKey } from "./chatgpt";
 import { queryPerplexity, testPerplexityKey } from "./perplexity";
 import { queryGemini, testGeminiKey } from "./gemini";
 import { queryGrok, testGrokKey } from "./grok";
+import { queryDeepSeek, testDeepSeekKey } from "./deepseek";
 import type { AIQueryResult } from "@/types";
 import type { ProviderName } from "./types";
 
@@ -15,6 +16,7 @@ export const providerQueryMap: Record<ProviderName, QueryFn> = {
   perplexity: queryPerplexity,
   gemini: queryGemini,
   grok: queryGrok,
+  deepseek: queryDeepSeek,
 };
 
 export const providerTestMap: Record<ProviderName, TestFn> = {
@@ -23,6 +25,7 @@ export const providerTestMap: Record<ProviderName, TestFn> = {
   perplexity: testPerplexityKey,
   gemini: testGeminiKey,
   grok: testGrokKey,
+  deepseek: testDeepSeekKey,
 };
 
 export { PROVIDERS, PROVIDER_INFO, SYSTEM_PROMPT } from "./types";

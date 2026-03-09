@@ -220,6 +220,7 @@ function getModelForProvider(provider: ProviderName): string {
     gemini: "gemini-2.0-flash",
     perplexity: "sonar",
     grok: "grok-3-mini-fast",
+    deepseek: "deepseek-chat",
   };
   return models[provider];
 }
@@ -273,11 +274,12 @@ async function queryWithKey(
     return { answer, rawResponse: data };
   }
 
-  // OpenAI-compatible: chatgpt, perplexity, grok
+  // OpenAI-compatible: chatgpt, perplexity, grok, deepseek
   const endpoints: Record<string, string> = {
     chatgpt: "https://api.openai.com/v1/chat/completions",
     perplexity: "https://api.perplexity.ai/chat/completions",
     grok: "https://api.x.ai/v1/chat/completions",
+    deepseek: "https://api.deepseek.com/chat/completions",
   };
 
   const res = await fetch(endpoints[provider], {

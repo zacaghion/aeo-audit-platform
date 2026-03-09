@@ -175,7 +175,7 @@ export default function NewAuditPage() {
           <CardDescription>Select which AI providers to query</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {["claude", "chatgpt", "perplexity", "gemini", "grok"].map((prov) => {
+          {["claude", "chatgpt", "perplexity", "gemini", "grok", "deepseek"].map((prov) => {
             const keyStatus = keys.find((k) => k.provider === prov);
             const available = keyStatus?.isValid ?? false;
             return (

@@ -2,7 +2,7 @@ import { getApiKey } from "./base";
 import { SYSTEM_PROMPT } from "./types";
 import type { AIQueryResult } from "@/types";
 
-const MODEL = "gpt-4o";
+const MODEL = "gpt-4o-mini";
 
 export async function queryChatGPT(prompt: string): Promise<AIQueryResult> {
   const apiKey = await getApiKey("chatgpt");
@@ -41,9 +41,13 @@ export async function testChatGPTKey(apiKey: string): Promise<boolean> {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 5,
+      max_tokens: 1,
       messages: [{ role: "user", content: "hi" }],
     }),
   });
-  return res.ok;
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error?.message || `OpenAI API returned ${res.status}`);
+  }
+  return true;
 }

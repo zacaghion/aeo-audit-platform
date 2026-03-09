@@ -10,11 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Settings, Key, ExternalLink, Check, X, Loader2, Trash2 } from "lucide-react";
 
 const PROVIDERS = [
-  { id: "claude", label: "Claude (Anthropic)", model: "claude-sonnet-4-5-20250929", keyUrl: "https://console.anthropic.com/settings/keys", cost: "~$1.50" },
-  { id: "chatgpt", label: "ChatGPT (OpenAI)", model: "gpt-4o", keyUrl: "https://platform.openai.com/api-keys", cost: "~$1.25" },
-  { id: "perplexity", label: "Perplexity", model: "sonar-pro", keyUrl: "https://www.perplexity.ai/settings/api", cost: "~$3.00" },
-  { id: "gemini", label: "Gemini (Google)", model: "gemini-2.5-pro", keyUrl: "https://aistudio.google.com/apikey", cost: "~$1.75" },
-  { id: "grok", label: "Grok (xAI)", model: "grok-3", keyUrl: "https://console.x.ai", cost: "~$1.50" },
+  { id: "claude", label: "Claude (Anthropic)", model: "claude-sonnet-4-20250514", keyUrl: "https://console.anthropic.com/settings/keys", cost: "~$1.50" },
+  { id: "chatgpt", label: "ChatGPT (OpenAI)", model: "gpt-4o-mini", keyUrl: "https://platform.openai.com/api-keys", cost: "~$1.25" },
+  { id: "perplexity", label: "Perplexity", model: "sonar", keyUrl: "https://www.perplexity.ai/settings/api", cost: "~$3.00" },
+  { id: "gemini", label: "Gemini (Google)", model: "gemini-2.0-flash", keyUrl: "https://aistudio.google.com/apikey", cost: "~$1.75" },
+  { id: "grok", label: "Grok (xAI)", model: "grok-3-mini-fast", keyUrl: "https://console.x.ai", cost: "~$1.50" },
 ];
 
 interface KeyStatus {

@@ -2,7 +2,7 @@ import { getApiKey } from "./base";
 import { SYSTEM_PROMPT } from "./types";
 import type { AIQueryResult } from "@/types";
 
-const MODEL = "grok-3";
+const MODEL = "grok-3-mini-fast";
 
 export async function queryGrok(prompt: string): Promise<AIQueryResult> {
   const apiKey = await getApiKey("grok");
@@ -41,9 +41,13 @@ export async function testGrokKey(apiKey: string): Promise<boolean> {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 5,
+      max_tokens: 1,
       messages: [{ role: "user", content: "hi" }],
     }),
   });
-  return res.ok;
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error?.message || `Grok API returned ${res.status}`);
+  }
+  return true;
 }

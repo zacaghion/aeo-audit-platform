@@ -1,0 +1,302 @@
+import { prisma } from "@/lib/db";
+import { decrypt } from "@/lib/crypto";
+import { providerQueryMap } from "@/lib/providers";
+import { generatePrompts } from "@/lib/prompt-generator";
+import { analyzeResponse, computeAuditSummary } from "@/lib/analysis";
+import type { ProviderName } from "@/lib/providers";
+import type { Prisma } from "@prisma/client";
+
+const RATE_LIMIT_DELAY_MS = 200;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function getDecryptedKey(provider: string): Promise<string | null> {
+  const record = await prisma.apiKey.findUnique({ where: { provider } });
+  if (!record || !record.isValid) return null;
+  try {
+    return decrypt(record.encryptedKey, record.iv, record.authTag);
+  } catch {
+    return null;
+  }
+}
+
+export async function runAudit(auditId: string) {
+  try {
+    const audit = await prisma.audit.findUnique({
+      where: { id: auditId },
+      include: { hotel: true },
+    });
+    if (!audit) throw new Error("Audit not found");
+
+    const config = audit.config as {
+      promptCount: number;
+      providers: string[];
+      categories: Record<string, number>;
+    };
+
+    const hotel = audit.hotel;
+    const competitors = hotel.competitors.split(/[,;]/).map((c: string) => c.trim()).filter(Boolean);
+
+    // Validate provider keys
+    const validProviders: { name: ProviderName; key: string }[] = [];
+    for (const p of config.providers) {
+      const key = await getDecryptedKey(p);
+      if (key) validProviders.push({ name: p as ProviderName, key });
+    }
+
+    if (validProviders.length === 0) {
+      await prisma.audit.update({
+        where: { id: auditId },
+        data: { status: "ERROR", analysis: { error: "No valid API keys found for selected providers" } },
+      });
+      return;
+    }
+
+    // Phase 1: Generate prompts
+    await prisma.audit.update({
+      where: { id: auditId },
+      data: { status: "GENERATING_PROMPTS", startedAt: new Date() },
+    });
+
+    const generatedPrompts = generatePrompts(
+      {
+        name: hotel.name,
+        location: hotel.location,
+        type: hotel.type,
+        features: hotel.features,
+        competitors: hotel.competitors,
+        priceRange: hotel.priceRange,
+      },
+      config.categories
+    );
+
+    const promptRecords = await Promise.all(
+      generatedPrompts.map((p) =>
+        prisma.prompt.create({
+          data: {
+            auditId,
+            promptNumber: p.promptNumber,
+            promptText: p.promptText,
+            category: p.category,
+            intent: p.intent,
+            expectedMention: p.expectedMention,
+          },
+        })
+      )
+    );
+
+    // Phase 2: Query providers
+    await prisma.audit.update({
+      where: { id: auditId },
+      data: { status: "QUERYING" },
+    });
+
+    for (const promptRecord of promptRecords) {
+      const promptData = generatedPrompts.find((p) => p.promptNumber === promptRecord.promptNumber);
+      if (!promptData) continue;
+
+      // Query all providers in parallel for each prompt
+      const providerCalls = validProviders.map(async ({ name, key }) => {
+        try {
+          const queryFn = providerQueryMap[name];
+          const start = Date.now();
+
+          // Temporarily set the key for this call by using a direct fetch
+          const result = await queryWithKey(name, key, promptData.promptText);
+          const latencyMs = Date.now() - start;
+
+          const analysis = analyzeResponse(result.answer, competitors, hotel.name);
+
+          await prisma.response.create({
+            data: {
+              promptId: promptRecord.id,
+              provider: name,
+              model: getModelForProvider(name),
+              answer: result.answer,
+              hotelMentioned: analysis.hotelMentioned,
+              mentionPosition: analysis.mentionPosition,
+              mentionSentiment: analysis.mentionSentiment,
+              competitorsMentioned: analysis.competitorsMentioned,
+              competitorCount: analysis.competitorCount,
+              answerLength: analysis.answerLength,
+              latencyMs,
+              status: "success",
+              rawResponse: result.rawResponse as Prisma.InputJsonValue,
+            },
+          });
+        } catch (e) {
+          await prisma.response.create({
+            data: {
+              promptId: promptRecord.id,
+              provider: name,
+              model: getModelForProvider(name),
+              answer: "",
+              status: "error",
+              errorMessage: e instanceof Error ? e.message : "Unknown error",
+              latencyMs: 0,
+            },
+          });
+        }
+      });
+
+      await Promise.all(providerCalls);
+      await sleep(RATE_LIMIT_DELAY_MS);
+    }
+
+    // Phase 3: Analyze
+    await prisma.audit.update({
+      where: { id: auditId },
+      data: { status: "ANALYZING" },
+    });
+
+    const fullAudit = await prisma.audit.findUnique({
+      where: { id: auditId },
+      include: {
+        prompts: {
+          orderBy: { promptNumber: "asc" },
+          include: { responses: true },
+        },
+      },
+    });
+
+    if (fullAudit) {
+      const summaryData = fullAudit.prompts.map((p) => ({
+        category: p.category,
+        responses: p.responses.filter((r) => r.status === "success").map((r) => ({
+          provider: r.provider,
+          hotelMentioned: r.hotelMentioned,
+          answerLength: r.answerLength,
+        })),
+      }));
+
+      const summary = computeAuditSummary(summaryData);
+
+      // Compute top competitors from response data
+      const competitorCounts: Record<string, number> = {};
+      for (const p of fullAudit.prompts) {
+        for (const r of p.responses) {
+          const mentioned = r.competitorsMentioned as string[];
+          if (Array.isArray(mentioned)) {
+            for (const c of mentioned) {
+              competitorCounts[c] = (competitorCounts[c] || 0) + 1;
+            }
+          }
+        }
+      }
+      const topCompetitors = Object.entries(competitorCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10)
+        .map(([name, count]) => ({ name, count }));
+
+      const fullSummary = { ...summary, topCompetitors };
+
+      await prisma.audit.update({
+        where: { id: auditId },
+        data: {
+          status: "COMPLETE",
+          summary: fullSummary,
+          completedAt: new Date(),
+        },
+      });
+    }
+  } catch (e) {
+    console.error("Audit runner fatal error:", e);
+    await prisma.audit.update({
+      where: { id: auditId },
+      data: {
+        status: "ERROR",
+        analysis: { error: e instanceof Error ? e.message : "Unknown fatal error" },
+      },
+    }).catch(() => {});
+  }
+}
+
+function getModelForProvider(provider: ProviderName): string {
+  const models: Record<ProviderName, string> = {
+    claude: "claude-sonnet-4-20250514",
+    chatgpt: "gpt-4o-mini",
+    gemini: "gemini-2.0-flash",
+    perplexity: "sonar",
+    grok: "grok-3-mini-fast",
+  };
+  return models[provider];
+}
+
+const SYSTEM_PROMPT = `You are a helpful AI assistant answering a traveler's query about hotels. Answer naturally and thoroughly based on your knowledge. Be specific with hotel names, prices, locations, and details. If you recommend specific hotels, explain why. If asked about a specific hotel, give honest pros and cons.`;
+
+async function queryWithKey(
+  provider: ProviderName,
+  apiKey: string,
+  prompt: string
+): Promise<{ answer: string; rawResponse: Record<string, unknown> }> {
+  const model = getModelForProvider(provider);
+
+  if (provider === "claude") {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1024,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `Claude API ${res.status}`);
+    const answer = data.content?.filter((b: Record<string, string>) => b.type === "text").map((b: Record<string, string>) => b.text).join("\n") || "";
+    return { answer, rawResponse: data };
+  }
+
+  if (provider === "gemini") {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 1024 },
+        }),
+      }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `Gemini API ${res.status}`);
+    const answer = data.candidates?.[0]?.content?.parts?.map((p: Record<string, string>) => p.text).join("\n") || "";
+    return { answer, rawResponse: data };
+  }
+
+  // OpenAI-compatible: chatgpt, perplexity, grok
+  const endpoints: Record<string, string> = {
+    chatgpt: "https://api.openai.com/v1/chat/completions",
+    perplexity: "https://api.perplexity.ai/chat/completions",
+    grok: "https://api.x.ai/v1/chat/completions",
+  };
+
+  const res = await fetch(endpoints[provider], {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1024,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || `${provider} API ${res.status}`);
+  const answer = data.choices?.[0]?.message?.content || "";
+  return { answer, rawResponse: data };
+}

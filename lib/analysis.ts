@@ -1,11 +1,3 @@
-const HOTEL_PATTERNS = [
-  "ad lib",
-  "adlib",
-  "ad-lib",
-  "ad lib hotel",
-  "ad lib bangkok",
-];
-
 const POSITION_PATTERNS = [
   { pattern: /(?:^|\n)\s*(?:1[\.\):]|first|#1)\s/i, position: "1st" },
   { pattern: /(?:^|\n)\s*(?:2[\.\):]|second|#2)\s/i, position: "2nd" },
@@ -13,9 +5,26 @@ const POSITION_PATTERNS = [
   { pattern: /(?:^|\n)\s*(?:4[\.\):]|fourth|#4)\s/i, position: "4th" },
 ];
 
+function buildHotelPatterns(hotelName: string): string[] {
+  const name = hotelName.toLowerCase().trim();
+  const patterns = [name];
+  const noDash = name.replace(/-/g, " ");
+  const dashed = name.replace(/\s+/g, "-");
+  const collapsed = name.replace(/[\s-]+/g, "");
+  if (noDash !== name) patterns.push(noDash);
+  if (dashed !== name) patterns.push(dashed);
+  if (collapsed !== name) patterns.push(collapsed);
+  const words = name.split(/\s+/);
+  if (words.length > 2) {
+    patterns.push(words.slice(0, -1).join(" "));
+  }
+  return Array.from(new Set(patterns)).filter(p => p.length >= 3);
+}
+
 export function analyzeResponse(
   answer: string,
-  competitors: string[]
+  competitors: string[],
+  hotelName?: string
 ): {
   hotelMentioned: boolean;
   mentionPosition: string | null;
@@ -25,11 +34,14 @@ export function analyzeResponse(
   answerLength: number;
 } {
   const lowerAnswer = answer.toLowerCase();
-  const hotelMentioned = HOTEL_PATTERNS.some((p) => lowerAnswer.includes(p));
+  const hotelPatterns = hotelName
+    ? buildHotelPatterns(hotelName)
+    : buildHotelPatterns("Ad Lib Hotel Bangkok");
+  const hotelMentioned = hotelPatterns.some((p) => lowerAnswer.includes(p));
 
   let mentionPosition: string | null = null;
   if (hotelMentioned) {
-    const mentionIdx = HOTEL_PATTERNS.reduce((min, p) => {
+    const mentionIdx = hotelPatterns.reduce((min, p) => {
       const idx = lowerAnswer.indexOf(p);
       return idx >= 0 && idx < min ? idx : min;
     }, Infinity);
@@ -49,7 +61,7 @@ export function analyzeResponse(
           Math.max(0, mentionIdx - 200),
           mentionIdx + 200
         );
-        if (HOTEL_PATTERNS.some((p) => section.toLowerCase().includes(p))) {
+        if (hotelPatterns.some((p) => section.toLowerCase().includes(p))) {
           mentionPosition = position;
           break;
         }

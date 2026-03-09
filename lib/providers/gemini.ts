@@ -2,7 +2,7 @@ import { getApiKey } from "./base";
 import { SYSTEM_PROMPT } from "./types";
 import type { AIQueryResult } from "@/types";
 
-const MODEL = "gemini-2.5-pro";
+const MODEL = "gemini-2.0-flash";
 
 export async function queryGemini(prompt: string): Promise<AIQueryResult> {
   const apiKey = await getApiKey("gemini");
@@ -41,9 +41,13 @@ export async function testGeminiKey(apiKey: string): Promise<boolean> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: "hi" }] }],
-        generationConfig: { maxOutputTokens: 5 },
+        generationConfig: { maxOutputTokens: 1 },
       }),
     }
   );
-  return res.ok;
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error?.message || `Gemini API returned ${res.status}`);
+  }
+  return true;
 }

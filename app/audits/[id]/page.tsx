@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { AuditDetail } from "./audit-detail";
+import { AuditProgress } from "./audit-progress";
 
 export default async function AuditDetailPage({ params }: { params: { id: string } }) {
   const audit = await prisma.audit.findUnique({
@@ -18,5 +19,11 @@ export default async function AuditDetailPage({ params }: { params: { id: string
 
   if (!audit) notFound();
 
-  return <AuditDetail audit={JSON.parse(JSON.stringify(audit))} />;
+  const data = JSON.parse(JSON.stringify(audit));
+
+  if (audit.status !== "COMPLETE" && audit.status !== "ERROR") {
+    return <AuditProgress audit={data} />;
+  }
+
+  return <AuditDetail audit={data} />;
 }

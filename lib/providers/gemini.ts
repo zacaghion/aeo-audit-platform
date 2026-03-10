@@ -2,7 +2,7 @@ import { getApiKey } from "./base";
 import { SYSTEM_PROMPT } from "./types";
 import type { AIQueryResult } from "@/types";
 
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-2.5-pro";
 
 export async function queryGemini(prompt: string): Promise<AIQueryResult> {
   const apiKey = await getApiKey("gemini");

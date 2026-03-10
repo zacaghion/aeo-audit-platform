@@ -13,7 +13,7 @@ const PROVIDERS = [
   { id: "claude", label: "Claude (Anthropic)", model: "claude-sonnet-4-20250514", keyUrl: "https://console.anthropic.com/settings/keys", cost: "~$1.50" },
   { id: "chatgpt", label: "ChatGPT (OpenAI)", model: "gpt-4o-mini", keyUrl: "https://platform.openai.com/api-keys", cost: "~$1.25" },
   { id: "perplexity", label: "Perplexity", model: "sonar", keyUrl: "https://www.perplexity.ai/settings/api", cost: "~$3.00" },
-  { id: "gemini", label: "Gemini (Google)", model: "gemini-2.5-flash", keyUrl: "https://aistudio.google.com/apikey", cost: "~$1.75" },
+  { id: "gemini", label: "Gemini (Google)", model: "gemini-2.5-pro", keyUrl: "https://aistudio.google.com/apikey", cost: "~$3.50" },
   { id: "grok", label: "Grok (xAI)", model: "grok-3-mini-fast", keyUrl: "https://console.x.ai", cost: "~$1.50" },
   { id: "deepseek", label: "DeepSeek", model: "deepseek-chat", keyUrl: "https://platform.deepseek.com/api_keys", cost: "~$0.07" },
   { id: "claude-analysis", label: "Claude (Analysis)", model: "claude-sonnet-4-20250514", keyUrl: "https://console.anthropic.com/settings/keys", cost: "~$0.05/audit" },

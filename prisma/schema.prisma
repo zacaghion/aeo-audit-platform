@@ -34,6 +34,21 @@ model Audit {
   completedAt DateTime?
   createdAt   DateTime    @default(now())
   prompts     Prompt[]
+  benchmarks  Benchmark[]
+}
+
+model Benchmark {
+  id             String   @id @default(cuid())
+  auditId        String
+  audit          Audit    @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  brandName      String
+  isTarget       Boolean  @default(false)
+  visibility     Int
+  mentionRate    Float
+  sentiment      Int
+  totalResponses Int
+  providerScores Json
+  createdAt      DateTime @default(now())
 }
 
 model Prompt {
@@ -86,6 +101,7 @@ enum AuditStatus {
   GENERATING_PROMPTS
   QUERYING
   ANALYZING
+  BENCHMARKING
   COMPLETE
   ERROR
 }

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Plus, TrendingUp, Eye, Shield, AlertTriangle } from "lucide-react";
+import { BarChart3, Plus, TrendingUp, Eye, Shield, AlertTriangle, Trophy } from "lucide-react";
 import { DeleteAuditButton } from "@/components/delete-audit-button";
 
 const statusColors: Record<string, string> = {
@@ -13,6 +13,7 @@ const statusColors: Record<string, string> = {
   GENERATING_PROMPTS: "warning",
   QUERYING: "warning",
   ANALYZING: "warning",
+  BENCHMARKING: "warning",
   COMPLETE: "success",
   ERROR: "destructive",
 };
@@ -39,6 +40,8 @@ export default async function DashboardPage() {
     ? (summary.topCompetitors as Array<{ name: string; count: number }>)?.slice(0, 3)
     : [];
 
+  const benchmark = analysis?.benchmark as { rank: number; totalCompetitors: number } | undefined;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -56,7 +59,7 @@ export default async function DashboardPage() {
 
       {latestComplete && (
         <>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-5">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Mention Rate</CardTitle>
@@ -101,6 +104,18 @@ export default async function DashboardPage() {
                 </p>
               </CardContent>
             </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Competitive Rank</CardTitle>
+                <Trophy className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold font-mono">
+                  {benchmark ? `#${benchmark.rank} of ${benchmark.totalCompetitors}` : "—"}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">vs competitive set</p>
+              </CardContent>
+            </Card>
           </div>
         </>
       )}
@@ -123,26 +138,25 @@ export default async function DashboardPage() {
                 const maxResponses = audit.prompts.length * 5;
                 const auditSummary = audit.summary as Record<string, unknown> | null;
                 return (
-                  <Link
-                    key={audit.id}
-                    href={`/audits/${audit.id}`}
-                    className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-3">
-                        <span className="font-medium">{audit.brand.name}</span>
-                        <Badge variant={statusColors[audit.status] as "default"}>
-                          {audit.status === "QUERYING"
-                            ? `Querying ${totalResponses}/${maxResponses}`
-                            : audit.status.replace("_", " ")}
-                        </Badge>
+                  <div key={audit.id} className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50">
+                    <Link
+                      href={`/audits/${audit.id}`}
+                      className="flex-1 flex items-center justify-between min-w-0"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-3">
+                          <span className="font-medium">{audit.brand.name}</span>
+                          <Badge variant={statusColors[audit.status] as "default"}>
+                            {audit.status === "QUERYING"
+                              ? `Querying ${totalResponses}/${maxResponses}`
+                              : audit.status.replace("_", " ")}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {audit.brand.location ? `${audit.brand.location} · ` : ""}{audit.prompts.length} prompts &middot;{" "}
+                          {new Date(audit.createdAt).toLocaleDateString()}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {audit.brand.location ? `${audit.brand.location} · ` : ""}{audit.prompts.length} prompts &middot;{" "}
-                        {new Date(audit.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
                       {auditSummary && (
                         <div className="text-right font-mono text-sm">
                           <div className="text-primary font-semibold">
@@ -153,9 +167,11 @@ export default async function DashboardPage() {
                           </div>
                         </div>
                       )}
+                    </Link>
+                    <div className="ml-3">
                       <DeleteAuditButton auditId={audit.id} brandName={audit.brand.name} />
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>

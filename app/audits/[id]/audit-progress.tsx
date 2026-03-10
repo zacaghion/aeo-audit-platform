@@ -27,6 +27,7 @@ const STATUS_LABELS: Record<string, string> = {
   GENERATING_PROMPTS: "Generating prompts...",
   QUERYING: "Querying AI providers...",
   ANALYZING: "Analyzing responses...",
+  BENCHMARKING: "Benchmarking competitors...",
   COMPLETE: "Complete",
   ERROR: "Error",
 };

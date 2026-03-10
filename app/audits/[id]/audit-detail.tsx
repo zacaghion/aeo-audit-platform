@@ -10,6 +10,7 @@ import { DeleteAuditButton } from "@/components/delete-audit-button";
 import { OverviewTab } from "./overview-tab";
 import { RawDataTab } from "./raw-data-tab";
 import { AnalysisTab } from "./analysis-tab";
+import { BenchmarkTab } from "./benchmark-tab";
 import type { AuditSummary, AnalysisOutput } from "@/types";
 
 interface AuditData {
@@ -138,6 +139,7 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
           <TabsTrigger value="raw">Raw Data</TabsTrigger>
           {analysis && <TabsTrigger value="analysis">Analysis</TabsTrigger>}
           {analysis && <TabsTrigger value="recommendations">Recommendations</TabsTrigger>}
+          {analysis?.benchmark && <TabsTrigger value="benchmark">Benchmark</TabsTrigger>}
         </TabsList>
         <TabsContent value="overview">
           <OverviewTab audit={audit} />
@@ -153,6 +155,11 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
         {analysis && (
           <TabsContent value="recommendations">
             <RecommendationsTab recommendations={analysis.recommendations} />
+          </TabsContent>
+        )}
+        {analysis?.benchmark && (
+          <TabsContent value="benchmark">
+            <BenchmarkTab benchmark={analysis.benchmark} />
           </TabsContent>
         )}
       </Tabs>

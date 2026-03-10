@@ -5,6 +5,7 @@ import { generatePrompts } from "@/lib/prompt-generator";
 import { generatePromptsWithLLM } from "@/lib/prompt-generator-llm";
 import { analyzeResponse, computeAuditSummary } from "@/lib/analysis";
 import { generateAnalysis } from "@/lib/analysis-engine";
+import { runCompetitorBenchmark } from "@/lib/benchmark-runner";
 import type { ProviderName } from "@/lib/providers";
 import type { Prisma } from "@prisma/client";
 
@@ -12,7 +13,7 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function createLimiter(concurrency: number) {
+export function createLimiter(concurrency: number) {
   let active = 0;
   const queue: (() => void)[] = [];
   return async function limit<T>(fn: () => Promise<T>): Promise<T> {
@@ -280,6 +281,90 @@ export async function runAudit(auditId: string) {
         competitors: brand.competitors,
       });
 
+      // Phase 4: Benchmark competitors
+      const competitorList = brand.competitors.split(/[,;]/).map((c: string) => c.trim()).filter(Boolean);
+
+      if (competitorList.length > 0 && validProviders.length > 0) {
+        await prisma.audit.update({
+          where: { id: auditId },
+          data: { status: "BENCHMARKING" },
+        });
+
+        // Pick top 2 providers (or all if fewer)
+        const benchProviders = validProviders.slice(0, 2);
+        const allCompetitorNames = [brand.name, ...competitorList];
+
+        // Run competitor benchmarks in parallel
+        const benchmarkResults = await Promise.all(
+          competitorList.map((comp) =>
+            runCompetitorBenchmark(comp, brand.category, brand.features, benchProviders, allCompetitorNames)
+              .catch((e) => {
+                console.error(`Benchmark failed for ${comp}:`, e);
+                return null;
+              })
+          )
+        );
+
+        // Store target brand's own scores from the main analysis
+        const targetVisibility = analysis.brand_visibility.overall_score;
+        const targetMentionRate = Math.round(
+          (fullAudit.prompts.reduce((s, p) => s + p.responses.filter((r) => r.brandMentioned).length, 0) /
+            Math.max(1, fullAudit.prompts.reduce((s, p) => s + p.responses.filter((r) => r.status === "success").length, 0))) * 100
+        );
+        const targetSentiment = analysis.sentiment_analysis.sentiment_score;
+
+        const targetProviderScores: Record<string, number> = {};
+        for (const [prov, score] of Object.entries(analysis.brand_visibility.provider_scores)) {
+          targetProviderScores[prov] = score;
+        }
+
+        await prisma.benchmark.create({
+          data: {
+            auditId,
+            brandName: brand.name,
+            isTarget: true,
+            visibility: targetVisibility,
+            mentionRate: targetMentionRate,
+            sentiment: targetSentiment,
+            totalResponses: fullAudit.prompts.reduce((s, p) => s + p.responses.filter((r) => r.status === "success").length, 0),
+            providerScores: targetProviderScores,
+          },
+        });
+
+        // Store competitor benchmarks
+        for (const result of benchmarkResults) {
+          if (!result) continue;
+          await prisma.benchmark.create({
+            data: {
+              auditId,
+              brandName: result.brandName,
+              isTarget: false,
+              visibility: result.visibility,
+              mentionRate: result.mentionRate,
+              sentiment: result.sentiment,
+              totalResponses: result.totalResponses,
+              providerScores: result.providerScores,
+            },
+          });
+        }
+
+        // Compute ranking and add to analysis
+        const allScores = [
+          { name: brand.name, isTarget: true, visibility: targetVisibility, mentionRate: targetMentionRate, sentiment: targetSentiment },
+          ...benchmarkResults.filter(Boolean).map((r) => ({
+            name: r!.brandName, isTarget: false, visibility: r!.visibility, mentionRate: r!.mentionRate, sentiment: r!.sentiment,
+          })),
+        ].sort((a, b) => b.visibility - a.visibility);
+
+        const rank = allScores.findIndex((s) => s.isTarget) + 1;
+
+        analysis.benchmark = {
+          rank,
+          totalCompetitors: allScores.length,
+          scores: allScores,
+        };
+      }
+
       await prisma.audit.update({
         where: { id: auditId },
         data: {
@@ -302,7 +387,7 @@ export async function runAudit(auditId: string) {
   }
 }
 
-function getModelForProvider(provider: ProviderName): string {
+export function getModelForProvider(provider: ProviderName): string {
   const models: Record<ProviderName, string> = {
     claude: "claude-sonnet-4-20250514",
     chatgpt: "gpt-4o-mini",
@@ -314,7 +399,7 @@ function getModelForProvider(provider: ProviderName): string {
   return models[provider];
 }
 
-async function callWithRetry(
+export async function callWithRetry(
   provider: ProviderName,
   apiKey: string,
   prompt: string,
@@ -344,7 +429,7 @@ function getRunnerSystemPrompt(brand: { name: string; category: string; location
   return `You are a helpful AI assistant answering a consumer's query about ${brand.category.toLowerCase()} businesses${brand.location ? ` in ${brand.location}` : ""}. Answer naturally and thoroughly based on your knowledge. Be specific with names, prices, locations, and details. If you recommend specific businesses, explain why. If asked about a specific business, give honest pros and cons.`;
 }
 
-async function queryWithKey(
+export async function queryWithKey(
   provider: ProviderName,
   apiKey: string,
   prompt: string,

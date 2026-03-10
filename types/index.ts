@@ -79,6 +79,17 @@ export interface AnalysisOutput {
     missing_use_cases: string[];
     provider_specific_gaps: Record<string, string[]>;
   };
+  benchmark?: {
+    rank: number;
+    totalCompetitors: number;
+    scores: Array<{
+      name: string;
+      isTarget: boolean;
+      visibility: number;
+      mentionRate: number;
+      sentiment: number;
+    }>;
+  };
   recommendations: {
     new_content_to_create: Array<{
       priority: string;

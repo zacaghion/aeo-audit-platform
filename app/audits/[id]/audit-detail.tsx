@@ -29,7 +29,7 @@ interface AuditData {
   summary: AuditSummary | null;
   analysis: AnalysisOutput | null;
   completedAt: string | null;
-  brand: { name: string; location: string; competitors: string };
+  brand: { name: string; location: string; competitors: string; website?: string; category?: string; features?: string };
   prompts: Array<{
     id: string;
     promptNumber: number;
@@ -220,7 +220,15 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
         {activeSection === "sentiment" && analysis && <SentimentSection analysis={analysis} />}
         {activeSection === "competitive" && analysis && <CompetitiveSection analysis={analysis} />}
         {activeSection === "benchmark" && analysis?.benchmark && <BenchmarkTab benchmark={analysis.benchmark} />}
-        {activeSection === "recommendations" && analysis && <RecommendationsSection recommendations={analysis.recommendations} />}
+        {activeSection === "recommendations" && analysis && (
+          <RecommendationsSection
+            recommendations={analysis.recommendations}
+            brand={audit.brand}
+            analysis={analysis}
+            prompts={audit.prompts}
+            mentionRate={audit.summary?.mentionRate}
+          />
+        )}
         {activeSection === "raw" && <RawDataTab prompts={audit.prompts} />}
       </div>
     </div>

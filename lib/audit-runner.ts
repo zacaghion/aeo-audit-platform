@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { providerQueryMap } from "@/lib/providers";
 import { generatePrompts } from "@/lib/prompt-generator";
+import { generatePromptsWithLLM } from "@/lib/prompt-generator-llm";
 import { analyzeResponse, computeAuditSummary } from "@/lib/analysis";
 import { generateAnalysis } from "@/lib/analysis-engine";
 import type { ProviderName } from "@/lib/providers";
@@ -61,23 +62,31 @@ export async function runAudit(auditId: string) {
       orderBy: { promptNumber: "asc" },
     });
 
-    const generatedPrompts = generatePrompts(
-      {
+    if (promptRecords.length === 0) {
+      await prisma.audit.update({
+        where: { id: auditId },
+        data: { status: "GENERATING_PROMPTS", startedAt: new Date() },
+      });
+
+      const brandInfo = {
         name: brand.name,
         location: brand.location,
         type: brand.category,
         features: brand.features,
         competitors: brand.competitors,
         priceRange: brand.priceRange,
-      },
-      config.categories
-    );
+      };
 
-    if (promptRecords.length === 0) {
-      await prisma.audit.update({
-        where: { id: auditId },
-        data: { status: "GENERATING_PROMPTS", startedAt: new Date() },
-      });
+      // Try Claude first, fall back to templates
+      console.log("Attempting Claude-based prompt generation...");
+      let generatedPrompts = await generatePromptsWithLLM(brandInfo, config.categories);
+
+      if (!generatedPrompts || generatedPrompts.length === 0) {
+        console.log("Claude unavailable, falling back to template-based generation");
+        generatedPrompts = generatePrompts(brandInfo, config.categories);
+      } else {
+        console.log(`Claude generated ${generatedPrompts.length} prompts`);
+      }
 
       promptRecords = await Promise.all(
         generatedPrompts.map((p) =>
@@ -102,8 +111,6 @@ export async function runAudit(auditId: string) {
     });
 
     for (const promptRecord of promptRecords) {
-      const promptData = generatedPrompts.find((p) => p.promptNumber === promptRecord.promptNumber);
-      if (!promptData) continue;
 
       // Skip prompts that already have responses (resume support)
       const existingResponses = await prisma.response.count({
@@ -121,7 +128,7 @@ export async function runAudit(auditId: string) {
       const providerCalls = remainingProviders.map(async ({ name, key }) => {
         try {
           const start = Date.now();
-          const result = await queryWithKey(name, key, promptData.promptText, brand);
+          const result = await queryWithKey(name, key, promptRecord.promptText, brand);
           const latencyMs = Date.now() - start;
 
           const analysis = analyzeResponse(result.answer, competitors, brand.name);

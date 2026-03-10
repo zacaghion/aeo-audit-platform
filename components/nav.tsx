@@ -6,8 +6,7 @@ import { cn } from "@/lib/utils";
 import { BarChart3, Settings, Plus, Home } from "lucide-react";
 
 const links = [
-  { href: "/", label: "Dashboard", icon: Home },
-  { href: "/audits", label: "Audits", icon: BarChart3 },
+  { href: "/", label: "Audits", icon: BarChart3 },
   { href: "/audits/new", label: "New Audit", icon: Plus },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

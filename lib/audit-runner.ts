@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
-import { providerQueryMap } from "@/lib/providers";
+
 import { generatePrompts } from "@/lib/prompt-generator";
 import { generatePromptsWithLLM } from "@/lib/prompt-generator-llm";
 import { analyzeResponse, computeAuditSummary } from "@/lib/analysis";
@@ -8,11 +8,44 @@ import { generateAnalysis } from "@/lib/analysis-engine";
 import type { ProviderName } from "@/lib/providers";
 import type { Prisma } from "@prisma/client";
 
-const RATE_LIMIT_DELAY_MS = 200;
-
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+function createLimiter(concurrency: number) {
+  let active = 0;
+  const queue: (() => void)[] = [];
+  return async function limit<T>(fn: () => Promise<T>): Promise<T> {
+    while (active >= concurrency) {
+      await new Promise<void>((resolve) => queue.push(resolve));
+    }
+    active++;
+    try {
+      return await fn();
+    } finally {
+      active--;
+      queue.shift()?.();
+    }
+  };
+}
+
+const PROVIDER_CONCURRENCY: Record<string, number> = {
+  chatgpt: 10,
+  deepseek: 10,
+  grok: 10,
+  gemini: 5,
+  claude: 5,
+  perplexity: 3,
+};
+
+const PROVIDER_DELAY: Record<string, number> = {
+  chatgpt: 0,
+  deepseek: 0,
+  grok: 0,
+  gemini: 50,
+  claude: 50,
+  perplexity: 100,
+};
 
 async function getDecryptedKey(provider: string): Promise<string | null> {
   const record = await prisma.apiKey.findUnique({ where: { provider } });
@@ -104,74 +137,75 @@ export async function runAudit(auditId: string) {
       );
     }
 
-    // Phase 2: Query providers
+    // Phase 2: Query providers (all providers run in parallel, each with concurrency limiter)
     await prisma.audit.update({
       where: { id: auditId },
       data: { status: "QUERYING" },
     });
 
-    for (const promptRecord of promptRecords) {
-
-      // Skip prompts that already have responses (resume support)
-      const existingResponses = await prisma.response.count({
-        where: { promptId: promptRecord.id },
-      });
-      if (existingResponses >= validProviders.length) continue;
-
-      const existingProviders = existingResponses > 0
-        ? (await prisma.response.findMany({ where: { promptId: promptRecord.id }, select: { provider: true } })).map(r => r.provider)
-        : [];
-
-      // Query remaining providers in parallel for each prompt
-      const remainingProviders = validProviders.filter(p => !existingProviders.includes(p.name));
-
-      const providerCalls = remainingProviders.map(async ({ name, key }) => {
-        try {
-          const start = Date.now();
-          const result = await queryWithKey(name, key, promptRecord.promptText, brand);
-          const latencyMs = Date.now() - start;
-
-          const analysis = analyzeResponse(result.answer, competitors, brand.name);
-
-          await prisma.response.create({
-            data: {
-              promptId: promptRecord.id,
-              provider: name,
-              model: getModelForProvider(name),
-              answer: result.answer,
-              brandMentioned: analysis.brandMentioned,
-              mentionPosition: analysis.mentionPosition,
-              mentionSentiment: analysis.mentionSentiment,
-              competitorsMentioned: analysis.competitorsMentioned,
-              competitorCount: analysis.competitorCount,
-              answerLength: analysis.answerLength,
-              latencyMs,
-              status: "success",
-              rawResponse: result.rawResponse as Prisma.InputJsonValue,
-            },
-          });
-        } catch (e) {
-          await prisma.response.create({
-            data: {
-              promptId: promptRecord.id,
-              provider: name,
-              model: getModelForProvider(name),
-              answer: "",
-              status: "error",
-              errorMessage: e instanceof Error ? e.message : "Unknown error",
-              latencyMs: 0,
-            },
-          });
-        }
-      });
-
-      try {
-        await Promise.all(providerCalls);
-      } catch (e) {
-        console.error(`Prompt ${promptRecord.promptNumber} batch failed:`, e);
-      }
-      await sleep(RATE_LIMIT_DELAY_MS);
+    // Pre-fetch existing responses for resume support
+    const existingResponseSet = new Set<string>();
+    const allExisting = await prisma.response.findMany({
+      where: { promptId: { in: promptRecords.map((p) => p.id) } },
+      select: { promptId: true, provider: true },
+    });
+    for (const r of allExisting) {
+      existingResponseSet.add(`${r.promptId}:${r.provider}`);
     }
+
+    const providerStreams = validProviders.map(({ name, key }) => {
+      const concurrency = PROVIDER_CONCURRENCY[name] || 5;
+      const delay = PROVIDER_DELAY[name] || 0;
+      const limit = createLimiter(concurrency);
+
+      return Promise.all(
+        promptRecords.map((promptRecord) =>
+          limit(async () => {
+            // Skip if response already exists (resume support)
+            if (existingResponseSet.has(`${promptRecord.id}:${name}`)) return;
+
+            if (delay > 0) await sleep(delay);
+
+            try {
+              const result = await callWithRetry(name, key, promptRecord.promptText, brand);
+              const analysis = analyzeResponse(result.answer, competitors, brand.name);
+
+              await prisma.response.create({
+                data: {
+                  promptId: promptRecord.id,
+                  provider: name,
+                  model: getModelForProvider(name),
+                  answer: result.answer,
+                  brandMentioned: analysis.brandMentioned,
+                  mentionPosition: analysis.mentionPosition,
+                  mentionSentiment: analysis.mentionSentiment,
+                  competitorsMentioned: analysis.competitorsMentioned,
+                  competitorCount: analysis.competitorCount,
+                  answerLength: analysis.answerLength,
+                  latencyMs: result.latencyMs,
+                  status: "success",
+                  rawResponse: result.rawResponse as Prisma.InputJsonValue,
+                },
+              });
+            } catch (e) {
+              await prisma.response.create({
+                data: {
+                  promptId: promptRecord.id,
+                  provider: name,
+                  model: getModelForProvider(name),
+                  answer: "",
+                  status: "error",
+                  errorMessage: e instanceof Error ? e.message : "Unknown error",
+                  latencyMs: 0,
+                },
+              });
+            }
+          })
+        )
+      );
+    });
+
+    await Promise.all(providerStreams);
 
     // Phase 3: Analyze
     await prisma.audit.update({
@@ -278,6 +312,32 @@ function getModelForProvider(provider: ProviderName): string {
     deepseek: "deepseek-chat",
   };
   return models[provider];
+}
+
+async function callWithRetry(
+  provider: ProviderName,
+  apiKey: string,
+  prompt: string,
+  brand: { name: string; category: string; location: string },
+  maxRetries = 3
+): Promise<{ answer: string; rawResponse: Record<string, unknown>; latencyMs: number }> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const start = Date.now();
+    try {
+      const result = await queryWithKey(provider, apiKey, prompt, brand);
+      return { ...result, latencyMs: Date.now() - start };
+    } catch (e) {
+      const isRateLimit = e instanceof Error && (e.message.includes("429") || e.message.toLowerCase().includes("rate"));
+      if (isRateLimit && attempt < maxRetries - 1) {
+        const backoff = Math.pow(2, attempt + 1) * 1000; // 2s, 4s
+        console.log(`${provider} rate limited, retrying in ${backoff}ms (attempt ${attempt + 1})`);
+        await sleep(backoff);
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error(`${provider} failed after ${maxRetries} retries`);
 }
 
 function getRunnerSystemPrompt(brand: { name: string; category: string; location: string }): string {

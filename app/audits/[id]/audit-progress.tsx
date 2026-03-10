@@ -75,7 +75,7 @@ export function AuditProgress({ audit }: { audit: AuditData }) {
             {STATUS_LABELS[progress?.status || audit.status] || audit.status}
           </Badge>
         </div>
-        <p className="text-muted-foreground mt-1">{audit.brand.location}</p>
+        {audit.brand.location && <p className="text-muted-foreground mt-1">{audit.brand.location}</p>}
       </div>
 
       <Card>

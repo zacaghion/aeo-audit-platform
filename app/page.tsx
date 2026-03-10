@@ -137,7 +137,7 @@ export default async function DashboardPage() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {audit.brand.location} &middot; {audit.prompts.length} prompts &middot;{" "}
+                        {audit.brand.location ? `${audit.brand.location} · ` : ""}{audit.prompts.length} prompts &middot;{" "}
                         {new Date(audit.createdAt).toLocaleDateString()}
                       </p>
                     </div>

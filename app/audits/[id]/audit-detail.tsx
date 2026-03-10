@@ -65,7 +65,7 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
               {audit.status.replace("_", " ")}
             </Badge>
           </div>
-          <p className="text-muted-foreground mt-1">{audit.brand.location}</p>
+          {audit.brand.location && <p className="text-muted-foreground mt-1">{audit.brand.location}</p>}
         </div>
         {audit.status === "COMPLETE" && (
           <Button onClick={handleExport} variant="outline">

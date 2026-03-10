@@ -35,7 +35,7 @@ The prompts should:
 - Sound natural and conversational, like real questions people ask AI chatbots
 - Cover a mix of discovery, comparison, brand-specific, and practical queries
 - Include some prompts that name the brand directly and some that don't
-- Be specific to the business type, location, and industry
+- Be specific to the business type and industry (and location if provided)
 - Vary in length and complexity (some short, some detailed with context)
 - Include long-tail queries with specific use cases or constraints
 - Never feel templated or formulaic
@@ -53,7 +53,7 @@ function buildUserPrompt(brand: BrandInfo, categories: Record<string, number>): 
 
 Brand: ${brand.name}
 Type: ${brand.type}
-Location: ${brand.location}
+Location: ${brand.location || "Global (no specific location)"}
 Features: ${brand.features}
 Competitors: ${brand.competitors}
 Price Range: ${brand.priceRange || "not specified"}
@@ -68,7 +68,7 @@ Rules:
 - About 30-40% of prompts should mention "${brand.name}" by name
 - The rest should be generic queries where the brand might or might not appear
 - Comparison prompts should pit "${brand.name}" against its competitors
-- Discovery prompts should be broad category queries for the location/industry
+- Discovery prompts should be broad category/industry queries${brand.location ? ` relevant to ${brand.location}` : ""}
 - Make prompts feel like real questions someone would ask ChatGPT or Gemini
 
 Respond with this exact JSON structure:
@@ -125,7 +125,7 @@ export async function generatePromptsWithLLM(
       promptNumber: i + 1,
       promptText: p.promptText,
       category: p.category,
-      intent: p.intent || `${p.category} query about ${brand.type} in ${brand.location}`,
+      intent: p.intent || `${p.category} query about ${brand.type}${brand.location ? ` in ${brand.location}` : ""}`,
       expectedMention: p.expectedMention || "maybe",
     }));
   } catch (e) {

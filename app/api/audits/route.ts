@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
   const totalPrompts = promptCount || 100;
   const scale = totalPrompts / 100;
-  const businessType = resolveBusinessType(brand.type || "other");
+  const businessType = resolveBusinessType(brand.category || brand.type || "other");
   const preset = BUSINESS_PRESETS[businessType];
   const categories: Record<string, number> = {};
   for (const [cat, count] of Object.entries(preset.categories)) {
@@ -40,8 +40,8 @@ export async function POST(req: NextRequest) {
     data: {
       name: brand.name,
       website: brand.website || null,
-      location: brand.location,
-      category: brand.type || "",
+      location: brand.location || "",
+      category: brand.category || brand.type || "",
       features: brand.features || "",
       competitors: brand.competitors || "",
       priceRange: brand.priceRange || null,

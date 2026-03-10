@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, X, Plus, AlertCircle } from "lucide-react";
+import { Loader2, X, Plus, AlertCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 interface KeyStatus {
@@ -27,11 +27,11 @@ export default function NewAuditPage() {
   const router = useRouter();
   const [keys, setKeys] = useState<KeyStatus[]>([]);
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
+  const [lookingUp, setLookingUp] = useState(false);
+  const [lookupError, setLookupError] = useState("");
   const [website, setWebsite] = useState("");
-  const [location, setLocation] = useState("");
+  const [name, setName] = useState("");
   const [businessType, setBusinessType] = useState("");
-  const [priceRange, setPriceRange] = useState("");
   const [features, setFeatures] = useState("");
   const [competitorInput, setCompetitorInput] = useState("");
   const [competitors, setCompetitors] = useState<string[]>([]);
@@ -46,12 +46,35 @@ export default function NewAuditPage() {
     });
   }, []);
 
-  useEffect(() => {
-    if (name && location && businessType) {
-      const auto = `${name} is a ${businessType} located in ${location}.${priceRange ? ` Room rates: ${priceRange}.` : ""}${features ? ` Key features: ${features}.` : ""}${competitors.length ? ` Key competitors: ${competitors.join(", ")}.` : ""}`;
-      setBrief(auto);
+  const handleLookup = async () => {
+    if (!website.trim()) return;
+    setLookingUp(true);
+    setLookupError("");
+    try {
+      const res = await fetch("/api/brand-lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ website: website.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLookupError(data.error || "Lookup failed");
+        return;
+      }
+      if (data.name) setName(data.name);
+      if (data.businessType) setBusinessType(data.businessType);
+      if (data.features) setFeatures(data.features);
+      if (data.competitors) {
+        const comps = data.competitors.split(/[,;]/).map((c: string) => c.trim()).filter(Boolean);
+        setCompetitors(comps);
+      }
+      if (data.brief) setBrief(data.brief);
+    } catch {
+      setLookupError("Network error");
+    } finally {
+      setLookingUp(false);
     }
-  }, [name, location, businessType, priceRange, features, competitors]);
+  };
 
   const addCompetitor = () => {
     const c = competitorInput.trim();
@@ -64,14 +87,14 @@ export default function NewAuditPage() {
   const validProviders = keys.filter((k) => k.isValid);
 
   const handleSubmit = async () => {
-    if (!name || !location || !brief || selectedProviders.length === 0) return;
+    if (!name || !brief || selectedProviders.length === 0) return;
     setLoading(true);
     try {
       const res = await fetch("/api/audits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          brand: { name, website, location, category: businessType, priceRange, features, competitors: competitors.join(", "), brief },
+          brand: { name, website, category: businessType, features, competitors: competitors.join(", "), brief },
           promptCount: parseInt(promptCount),
           providers: selectedProviders,
         }),
@@ -103,49 +126,44 @@ export default function NewAuditPage() {
       <Card>
         <CardHeader>
           <CardTitle>Brand Details</CardTitle>
-          <CardDescription>Enter information about the brand or business to audit</CardDescription>
+          <CardDescription>Enter a website to auto-populate, or fill in manually</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Website *</Label>
+            <div className="flex gap-2">
+              <Input
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://www.example.com"
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleLookup())}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleLookup}
+                disabled={lookingUp || !website.trim()}
+                className="shrink-0"
+              >
+                {lookingUp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                Auto-fill
+              </Button>
+            </div>
+            {lookupError && <p className="text-sm text-red-400">{lookupError}</p>}
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Brand / Business Name *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ad Lib Hotel Bangkok" />
-            </div>
-            <div className="space-y-2">
-              <Label>Website</Label>
-              <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://..." />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Location *</Label>
-              <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Bangkok, Thailand" />
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. AppsFlyer" />
             </div>
             <div className="space-y-2">
               <Label>Business Type</Label>
-              <Input value={businessType} onChange={(e) => setBusinessType(e.target.value)} placeholder="e.g. Hotel, Restaurant, SaaS" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Price Range</Label>
-              <Input value={priceRange} onChange={(e) => setPriceRange(e.target.value)} placeholder="$80-200/night" />
-            </div>
-            <div className="space-y-2">
-              <Label>Prompt Count</Label>
-              <Select value={promptCount} onValueChange={setPromptCount}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="25">25 prompts</SelectItem>
-                  <SelectItem value="50">50 prompts</SelectItem>
-                  <SelectItem value="100">100 prompts</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input value={businessType} onChange={(e) => setBusinessType(e.target.value)} placeholder="e.g. SaaS, Insurance, Retail" />
             </div>
           </div>
           <div className="space-y-2">
             <Label>Key Features</Label>
-            <Textarea value={features} onChange={(e) => setFeatures(e.target.value)} placeholder="Award-winning architecture, rooftop pool..." rows={3} />
+            <Textarea value={features} onChange={(e) => setFeatures(e.target.value)} placeholder="Key differentiators, products, services..." rows={3} />
           </div>
           <div className="space-y-2">
             <Label>Competitors</Label>
@@ -164,7 +182,18 @@ export default function NewAuditPage() {
           </div>
           <div className="space-y-2">
             <Label>Brand Brief *</Label>
-            <Textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={6} />
+            <Textarea value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Brief description of the company, its products/services, and market position..." rows={4} />
+          </div>
+          <div className="space-y-2">
+            <Label>Prompt Count</Label>
+            <Select value={promptCount} onValueChange={setPromptCount}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25 prompts</SelectItem>
+                <SelectItem value="50">50 prompts</SelectItem>
+                <SelectItem value="100">100 prompts</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -207,7 +236,7 @@ export default function NewAuditPage() {
         className="w-full"
         size="lg"
         onClick={handleSubmit}
-        disabled={loading || !name || !location || !brief || selectedProviders.length === 0}
+        disabled={loading || !name || !brief || selectedProviders.length === 0}
       >
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Start Audit

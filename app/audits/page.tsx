@@ -38,7 +38,7 @@ export default async function AuditsListPage() {
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {audit.brand.location} &middot; {audit.prompts.length} prompts &middot; {totalResp} responses
+                      {audit.brand.location ? `${audit.brand.location} · ` : ""}{audit.prompts.length} prompts &middot; {totalResp} responses
                     </p>
                   </div>
                   <div className="text-right font-mono">

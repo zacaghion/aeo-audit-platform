@@ -12,7 +12,7 @@ model Brand {
   id          String   @id @default(cuid())
   name        String
   website     String?
-  location    String
+  location    String   @default("")
   category    String
   features    String
   competitors String

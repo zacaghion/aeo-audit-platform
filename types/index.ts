@@ -95,22 +95,44 @@ export interface AnalysisOutput {
       priority: string;
       type: string;
       topic: string;
+      draft_outline?: string[];
       target_queries: number[];
       target_providers: string[];
       rationale: string;
       suggested_scope: string;
+      estimated_impact?: string;
+      effort?: string;
     }>;
     existing_content_to_update: Array<{
       priority: string;
-      url: string;
-      issue: string;
-      fix: string;
-      expected_impact: string;
+      page_url: string;
+      page_type?: string;
+      current_state: string;
+      suggested_revision: string;
+      rationale: string;
+      estimated_impact?: string;
+      effort?: string;
+      steps?: string[];
+      // Legacy fields for backward compat
+      url?: string;
+      issue?: string;
+      fix?: string;
+      expected_impact?: string;
     }>;
     structured_data_recommendations: string[];
     third_party_actions: string[];
-    quick_wins: string[];
-    long_term_plays: string[];
+    quick_wins: Array<string | {
+      action: string;
+      steps?: string[];
+      estimated_impact?: string;
+      effort?: string;
+    }>;
+    long_term_plays: Array<string | {
+      action: string;
+      steps?: string[];
+      estimated_impact?: string;
+      effort?: string;
+    }>;
   };
 }
 

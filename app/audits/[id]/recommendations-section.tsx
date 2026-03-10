@@ -4,21 +4,36 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Copy, Check, ExternalLink, ChevronRight } from "lucide-react";
 import type { AnalysisOutput } from "@/types";
 
 /* ── Helpers ── */
 
-function priorityDashedClass(priority: string): string {
-  switch (priority.toLowerCase()) {
-    case "high":
-      return "border-dashed border-emerald-500 text-emerald-400";
-    case "medium":
-      return "border-dashed border-amber-500 text-amber-400";
-    case "low":
-      return "border-dashed border-red-500 text-red-400";
-    default:
-      return "border-dashed border-muted-foreground text-muted-foreground";
-  }
+function impactBadge(impact?: string) {
+  if (!impact) return null;
+  const lower = impact.toLowerCase();
+  let variant: "success" | "warning" | "destructive" | "secondary" = "secondary";
+  if (lower.includes("high")) variant = "success";
+  else if (lower.includes("medium")) variant = "warning";
+  else if (lower.includes("low")) variant = "destructive";
+  return (
+    <Badge variant={variant} className="text-xs">
+      {impact} impact
+    </Badge>
+  );
+}
+
+function effortBadge(effort?: string) {
+  if (!effort) return null;
+  const lower = effort.toLowerCase();
+  let cls = "bg-sky-500/20 text-sky-400 border-transparent";
+  if (lower.includes("high")) cls = "bg-rose-500/20 text-rose-400 border-transparent";
+  else if (lower.includes("medium")) cls = "bg-amber-500/20 text-amber-400 border-transparent";
+  return (
+    <Badge className={`text-xs ${cls}`}>
+      {effort} effort
+    </Badge>
+  );
 }
 
 function priorityBadgeVariant(
@@ -36,84 +51,50 @@ function priorityBadgeVariant(
   }
 }
 
-function impactLabel(priority: string): string {
-  switch (priority.toLowerCase()) {
-    case "high":
-      return "High impact, Low effort";
-    case "medium":
-      return "Medium impact";
-    case "low":
-      return "Low impact, Higher effort";
-    default:
-      return priority;
-  }
-}
+/* ── ActionItem: shared layout for quick_wins / long_term_plays ── */
 
-/* ── Reusable action-card wrapper ── */
-
-function ActionCard({
-  index,
+function ActionItem({
+  item,
   dismissed,
-  done,
-  onDismiss,
-  onDone,
-  children,
+  id,
 }: {
-  index: number;
-  dismissed: Set<number>;
-  done: Set<number>;
-  onDismiss: (i: number) => void;
-  onDone: (i: number) => void;
-  children: React.ReactNode;
+  item: string | { action: string; steps?: string[]; estimated_impact?: string; effort?: string };
+  dismissed: boolean;
+  id: string;
 }) {
-  if (dismissed.has(index)) return null;
+  if (dismissed) return null;
 
-  const isDone = done.has(index);
+  if (typeof item === "string") {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-2">
+            <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+            <p className="text-sm text-foreground">{item}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card
-      className={`transition-all duration-300 ${isDone ? "opacity-70" : ""}`}
-    >
-      <CardContent className="pt-6 relative">
-        {isDone && (
-          <div className="absolute top-3 right-3 text-emerald-400">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-          </div>
+    <Card>
+      <CardContent className="pt-6 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {impactBadge(item.estimated_impact)}
+          {effortBadge(item.effort)}
+        </div>
+        <div className="flex items-start gap-2">
+          <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+          <p className="text-sm font-medium text-foreground">{item.action}</p>
+        </div>
+        {item.steps && item.steps.length > 0 && (
+          <ol className="list-decimal list-inside space-y-1 pl-6 text-sm text-muted-foreground">
+            {item.steps.map((step, j) => (
+              <li key={j}>{step}</li>
+            ))}
+          </ol>
         )}
-        <div className={`transition-all duration-300 ${isDone ? "line-through decoration-emerald-500/50" : ""}`}>
-          {children}
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDismiss(index)}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            Dismiss
-          </Button>
-          <Button
-            variant={isDone ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => onDone(index)}
-            className={isDone ? "text-emerald-400" : ""}
-          >
-            {isDone ? "✓ Done" : "Mark as done"}
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );
@@ -126,57 +107,25 @@ export function RecommendationsSection({
 }: {
   recommendations: AnalysisOutput["recommendations"];
 }) {
-  const [dismissedQuickWins, setDismissedQuickWins] = useState<Set<number>>(
-    () => new Set(),
-  );
-  const [doneQuickWins, setDoneQuickWins] = useState<Set<number>>(
-    () => new Set(),
-  );
-
-  const [dismissedNewContent, setDismissedNewContent] = useState<Set<number>>(
-    () => new Set(),
-  );
-  const [doneNewContent, setDoneNewContent] = useState<Set<number>>(
-    () => new Set(),
-  );
-
-  const [dismissedLongTerm, setDismissedLongTerm] = useState<Set<number>>(
-    () => new Set(),
-  );
-  const [doneLongTerm, setDoneLongTerm] = useState<Set<number>>(
-    () => new Set(),
-  );
-
-  const [dismissedExisting, setDismissedExisting] = useState<Set<number>>(
-    () => new Set(),
-  );
-  const [doneExisting, setDoneExisting] = useState<Set<number>>(
-    () => new Set(),
-  );
-
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
   const [checkedTechnical, setCheckedTechnical] = useState<Set<number>>(
     () => new Set(),
   );
 
-  /* ── State helpers ── */
+  function handleCopy(text: string, id: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
 
-  function toggleSet(
-    setter: React.Dispatch<React.SetStateAction<Set<number>>>,
-    index: number,
-  ) {
-    setter((prev) => {
+  function toggleTechnical(index: number) {
+    setCheckedTechnical((prev) => {
       const next = new Set(prev);
       if (next.has(index)) next.delete(index);
       else next.add(index);
       return next;
     });
-  }
-
-  function addToSet(
-    setter: React.Dispatch<React.SetStateAction<Set<number>>>,
-    index: number,
-  ) {
-    setter((prev) => new Set(prev).add(index));
   }
 
   /* ── Derived data ── */
@@ -193,8 +142,228 @@ export function RecommendationsSection({
   ];
 
   return (
-    <div className="space-y-8">
-      {/* ── Quick Wins ── */}
+    <div className="space-y-10">
+      {/* ═══════════════════════════════════════════════
+          1. Existing Content to Update (most actionable)
+         ═══════════════════════════════════════════════ */}
+      {recommendations.existing_content_to_update?.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            🔧 Existing Content to Update
+            <Badge variant="secondary" className="text-xs">
+              {recommendations.existing_content_to_update.length} items
+            </Badge>
+          </h3>
+          <div className="space-y-4">
+            {recommendations.existing_content_to_update.map((item, i) => {
+              const itemId = `existing-${i}`;
+              if (dismissed.has(itemId)) return null;
+
+              const pageUrl = item.page_url || item.url;
+              const hasNewFields = !!item.current_state;
+              const currentState = item.current_state || item.issue || "";
+              const suggestedRevision = item.suggested_revision || item.fix || "";
+              const estimatedImpact = item.estimated_impact || item.expected_impact;
+
+              return (
+                <Card key={i}>
+                  <CardHeader className="pb-3">
+                    {/* Top row: impact / effort / page_type badges */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {impactBadge(estimatedImpact)}
+                      {effortBadge(item.effort)}
+                      {item.page_type && (
+                        <Badge variant="outline" className="text-xs">
+                          {item.page_type}
+                        </Badge>
+                      )}
+                      <Badge
+                        variant={priorityBadgeVariant(item.priority)}
+                        className="text-xs capitalize"
+                      >
+                        {item.priority} priority
+                      </Badge>
+                    </div>
+
+                    {/* Page URL */}
+                    {pageUrl && (
+                      <a
+                        href={pageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm text-sky-400 hover:text-sky-300 hover:underline truncate mt-1"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{pageUrl}</span>
+                      </a>
+                    )}
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    {/* Current State */}
+                    {currentState && (
+                      <div>
+                        <span className="text-xs font-medium text-red-400 uppercase tracking-wide">
+                          {hasNewFields ? "Current State" : "Issue"}
+                        </span>
+                        <div className="mt-1.5 rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2">
+                          <p className="text-sm text-red-300">{currentState}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Suggested Revision */}
+                    {suggestedRevision && (
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-emerald-400 uppercase tracking-wide">
+                            {hasNewFields ? "Suggested Revision" : "Fix"}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => handleCopy(suggestedRevision, itemId)}
+                          >
+                            {copiedId === itemId ? (
+                              <>
+                                <Check className="h-3.5 w-3.5 mr-1 text-emerald-400" />
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3.5 w-3.5 mr-1" />
+                                Copy
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        <div className="mt-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
+                          <p className="text-sm text-emerald-300">{suggestedRevision}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Rationale */}
+                    {item.rationale && (
+                      <p className="text-sm text-muted-foreground">
+                        {item.rationale}
+                      </p>
+                    )}
+
+                    {/* Steps */}
+                    {item.steps && item.steps.length > 0 && (
+                      <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+                        {item.steps.map((step, j) => (
+                          <li key={j}>{step}</li>
+                        ))}
+                      </ol>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════
+          2. New Content to Create
+         ═══════════════════════════════════════════════ */}
+      {recommendations.new_content_to_create?.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            ✏️ New Content to Create
+            <Badge variant="secondary" className="text-xs">
+              {recommendations.new_content_to_create.length} items
+            </Badge>
+          </h3>
+          <div className="space-y-4">
+            {recommendations.new_content_to_create.map((item, i) => {
+              const itemId = `new-content-${i}`;
+              if (dismissed.has(itemId)) return null;
+
+              return (
+                <Card key={i}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{item.topic}</CardTitle>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        {item.type}
+                      </Badge>
+                      <Badge
+                        variant={priorityBadgeVariant(item.priority)}
+                        className="text-xs capitalize"
+                      >
+                        {item.priority} priority
+                      </Badge>
+                      {impactBadge(item.estimated_impact)}
+                      {effortBadge(item.effort)}
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    {/* Draft Outline */}
+                    {item.draft_outline && item.draft_outline.length > 0 && (
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Draft Outline
+                        </span>
+                        <div className="mt-1.5 rounded-md bg-muted/50 border border-border px-3 py-2">
+                          {item.draft_outline.map((line, j) => (
+                            <p key={j} className="text-sm text-muted-foreground pl-4">
+                              {line}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Rationale */}
+                    <p className="text-sm text-muted-foreground">
+                      {item.rationale}
+                    </p>
+
+                    {/* Scope */}
+                    {item.suggested_scope && (
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Scope
+                        </span>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {item.suggested_scope}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Target providers */}
+                    {item.target_providers?.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground mr-1">
+                          Target providers:
+                        </span>
+                        {item.target_providers.map((provider) => (
+                          <Badge
+                            key={provider}
+                            variant="secondary"
+                            className="text-xs"
+                          >
+                            {provider}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════
+          3. Quick Wins
+         ═══════════════════════════════════════════════ */}
       {recommendations.quick_wins?.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -204,105 +373,24 @@ export function RecommendationsSection({
             </Badge>
           </h3>
           <div className="space-y-3">
-            {recommendations.quick_wins.map((item, i) => (
-              <ActionCard
-                key={i}
-                index={i}
-                dismissed={dismissedQuickWins}
-                done={doneQuickWins}
-                onDismiss={(idx) => addToSet(setDismissedQuickWins, idx)}
-                onDone={(idx) => toggleSet(setDoneQuickWins, idx)}
-              >
-                <Badge
-                  variant="outline"
-                  className={`mb-3 ${priorityDashedClass("high")}`}
-                >
-                  {impactLabel("high")}
-                </Badge>
-                <p className="text-sm text-foreground">{item}</p>
-              </ActionCard>
-            ))}
+            {recommendations.quick_wins.map((item, i) => {
+              const itemId = `quick-win-${i}`;
+              return (
+                <ActionItem
+                  key={i}
+                  item={item}
+                  dismissed={dismissed.has(itemId)}
+                  id={itemId}
+                />
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* ── New Content to Create ── */}
-      {recommendations.new_content_to_create?.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            ✏️ New Content to Create
-            <Badge variant="secondary" className="text-xs">
-              {recommendations.new_content_to_create.length} items
-            </Badge>
-          </h3>
-          <div className="space-y-3">
-            {recommendations.new_content_to_create.map((item, i) => (
-              <ActionCard
-                key={i}
-                index={i}
-                dismissed={dismissedNewContent}
-                done={doneNewContent}
-                onDismiss={(idx) => addToSet(setDismissedNewContent, idx)}
-                onDone={(idx) => toggleSet(setDoneNewContent, idx)}
-              >
-                <div className="space-y-3">
-                  <h4 className="text-base font-medium">{item.topic}</h4>
-
-                  {/* Badge row */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge
-                      variant={priorityBadgeVariant(item.priority)}
-                      className="text-xs capitalize"
-                    >
-                      {item.priority} priority
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {item.type}
-                    </Badge>
-                  </div>
-
-                  {/* Rationale */}
-                  <p className="text-sm text-muted-foreground">
-                    {item.rationale}
-                  </p>
-
-                  {/* Scope */}
-                  {item.suggested_scope && (
-                    <div>
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Scope:
-                      </span>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {item.suggested_scope}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Target providers */}
-                  {item.target_providers?.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs text-muted-foreground mr-1">
-                        Target:
-                      </span>
-                      {item.target_providers.map((provider) => (
-                        <Badge
-                          key={provider}
-                          variant="secondary"
-                          className="text-xs"
-                        >
-                          {provider}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </ActionCard>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Long-Term Plays ── */}
+      {/* ═══════════════════════════════════════════════
+          4. Long-Term Plays
+         ═══════════════════════════════════════════════ */}
       {recommendations.long_term_plays?.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -312,102 +400,24 @@ export function RecommendationsSection({
             </Badge>
           </h3>
           <div className="space-y-3">
-            {recommendations.long_term_plays.map((item, i) => (
-              <ActionCard
-                key={i}
-                index={i}
-                dismissed={dismissedLongTerm}
-                done={doneLongTerm}
-                onDismiss={(idx) => addToSet(setDismissedLongTerm, idx)}
-                onDone={(idx) => toggleSet(setDoneLongTerm, idx)}
-              >
-                <Badge
-                  variant="outline"
-                  className={`mb-3 ${priorityDashedClass("medium")}`}
-                >
-                  Strategic
-                </Badge>
-                <p className="text-sm text-foreground">{item}</p>
-              </ActionCard>
-            ))}
+            {recommendations.long_term_plays.map((item, i) => {
+              const itemId = `long-term-${i}`;
+              return (
+                <ActionItem
+                  key={i}
+                  item={item}
+                  dismissed={dismissed.has(itemId)}
+                  id={itemId}
+                />
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* ── Existing Content to Update ── */}
-      {recommendations.existing_content_to_update?.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            🔧 Existing Content to Update
-            <Badge variant="secondary" className="text-xs">
-              {recommendations.existing_content_to_update.length} items
-            </Badge>
-          </h3>
-          <div className="space-y-3">
-            {recommendations.existing_content_to_update.map((item, i) => (
-              <ActionCard
-                key={i}
-                index={i}
-                dismissed={dismissedExisting}
-                done={doneExisting}
-                onDismiss={(idx) => addToSet(setDismissedExisting, idx)}
-                onDone={(idx) => toggleSet(setDoneExisting, idx)}
-              >
-                <div className="space-y-3">
-                  {/* Priority badge */}
-                  <Badge
-                    variant={priorityBadgeVariant(item.priority)}
-                    className="text-xs capitalize"
-                  >
-                    {item.priority} priority
-                  </Badge>
-
-                  {/* URL */}
-                  {item.url && (
-                    <p className="text-xs font-mono text-muted-foreground truncate">
-                      {item.url}
-                    </p>
-                  )}
-
-                  {/* Issue */}
-                  <div>
-                    <span className="text-xs font-medium text-red-400 uppercase tracking-wide">
-                      Issue:
-                    </span>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {item.issue}
-                    </p>
-                  </div>
-
-                  {/* Fix */}
-                  <div>
-                    <span className="text-xs font-medium text-emerald-400 uppercase tracking-wide">
-                      Fix:
-                    </span>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {item.fix}
-                    </p>
-                  </div>
-
-                  {/* Expected Impact */}
-                  {item.expected_impact && (
-                    <div>
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Expected Impact:
-                      </span>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {item.expected_impact}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </ActionCard>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Technical (Structured Data + Third-Party Actions) ── */}
+      {/* ═══════════════════════════════════════════════
+          5. Technical (Structured Data + Third-Party Actions)
+         ═══════════════════════════════════════════════ */}
       {technicalItems.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -425,9 +435,8 @@ export function RecommendationsSection({
                     <li
                       key={i}
                       className="flex items-start gap-3 cursor-pointer group transition-all duration-200"
-                      onClick={() => toggleSet(setCheckedTechnical, i)}
+                      onClick={() => toggleTechnical(i)}
                     >
-                      {/* Checkbox circle */}
                       <span
                         className={`mt-0.5 shrink-0 flex items-center justify-center h-5 w-5 rounded-full border-2 transition-all duration-200 ${
                           isChecked
@@ -436,23 +445,9 @@ export function RecommendationsSection({
                         }`}
                       >
                         {isChecked && (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-emerald-400"
-                          >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <Check className="h-3 w-3 text-emerald-400" />
                         )}
                       </span>
-
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <Badge variant="outline" className="text-xs shrink-0">

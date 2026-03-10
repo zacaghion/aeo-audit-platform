@@ -21,6 +21,7 @@ interface PromptData {
 
 interface BrandData {
   name: string;
+  website: string;
   location: string;
   category: string;
   features: string;
@@ -242,39 +243,88 @@ Return this JSON structure:
     // Call 2: Recommendations
     if (recsKey) {
       console.log("Running LLM recommendations...");
+
+      // Build list of prompts where brand was NOT mentioned (targets for improvement)
+      const missedPrompts = prompts
+        .filter((p) => p.responses.filter((r) => r.status === "success").every((r) => !r.brandMentioned))
+        .slice(0, 10)
+        .map((p) => `- "${p.promptText}" (${p.category})`)
+        .join("\n");
+
       try {
         const recsText = await callClaude(
           recsKey,
-          `You are an expert AEO (Answer Engine Optimization) strategist. Based on audit analysis, produce specific, actionable recommendations. Respond with valid JSON only, no markdown fences.`,
-          `Based on this AEO audit analysis for ${brand.name} (${brand.category}):
+          `You are producing a deliverable that a marketing manager will hand directly to their web team today. Every recommendation MUST include exact page URLs on the brand's website, exact text to add or change, and step-by-step instructions. Generic advice like "improve your content" is worthless. Be specific enough that someone can implement each recommendation without asking a single follow-up question. Respond with valid JSON only, no markdown fences.`,
+          `AEO Audit Results for ${brand.name} (${brand.category})
+Website: ${brand.website || "unknown"}
+Features: ${brand.features}
+Competitors: ${brand.competitors}
 
-Executive Summary: ${merged.executive_summary}
-
-Visibility Score: ${merged.brand_visibility.overall_score}/100
+Visibility: ${merged.brand_visibility.overall_score}/100
 Sentiment: ${merged.sentiment_analysis.overall_sentiment} (${merged.sentiment_analysis.sentiment_score}/100)
-Top Competitors: ${merged.competitive_positioning.primary_competitors.map(c => `${c.name} (${c.total_mentions} mentions)`).join(", ")}
+Top Competitors: ${merged.competitive_positioning.primary_competitors.map(c => `${c.name} (${c.total_mentions} mentions, threat=${c.threat_level})`).join(", ")}
+
 Content Gaps: ${merged.content_gaps.narrative}
 
-Weakest Categories: ${Object.entries(merged.brand_visibility.category_scores).filter(([,s]) => s < 50).map(([c,s]) => `${c} (${s}%)`).join(", ")}
-Weakest Providers: ${Object.entries(merged.brand_visibility.provider_scores).filter(([,s]) => s < 50).map(([p,s]) => `${p} (${s}%)`).join(", ")}
+Weakest Categories: ${Object.entries(merged.brand_visibility.category_scores).filter(([,s]) => s < 50).map(([c,s]) => `${c} (${s}%)`).join(", ") || "none"}
+Weakest Providers: ${Object.entries(merged.brand_visibility.provider_scores).filter(([,s]) => s < 50).map(([p,s]) => `${p} (${s}%)`).join(", ") || "none"}
 
-Generate specific, actionable recommendations:
+PROMPTS WHERE ${brand.name.toUpperCase()} WAS NOT MENTIONED BY ANY AI ENGINE:
+${missedPrompts || "None — brand was mentioned in all queries"}
+
+Based on your knowledge of ${brand.website || brand.name + "'s website"}, produce hyper-specific recommendations. For each existing page to update, use real URLs from the brand's website (e.g., ${brand.website}/products/..., ${brand.website}/solutions/...). Write actual draft copy, not descriptions of what to write.
+
 {
   "recommendations": {
-    "new_content_to_create": [
-      {"priority":"high|medium|low", "type":"blog post|landing page|case study|FAQ|whitepaper", "topic":"specific topic", "target_queries":[1,2,3], "target_providers":["chatgpt"], "rationale":"why this content matters for AEO", "suggested_scope":"what to cover"}
-    ],
     "existing_content_to_update": [
-      {"priority":"high|medium", "url":"general description of page type", "issue":"what's wrong", "fix":"specific fix", "expected_impact":"how this improves AI visibility"}
+      {
+        "priority": "high|medium|low",
+        "page_url": "https://exact-url-on-their-website.com/specific-page",
+        "page_type": "Product page|Landing page|Blog post|About page",
+        "current_state": "Describe what's currently missing or wrong on this specific page",
+        "suggested_revision": "Write the EXACT new meta description, heading, or paragraph text to add. Not a description — the actual copy.",
+        "rationale": "Why this specific change matters, referencing audit data (e.g., 'This page is not cited by any AI engine. Competitors X and Y are cited for this topic N times.')",
+        "estimated_impact": "high|medium|low",
+        "effort": "low|medium|high",
+        "steps": ["Step 1: exact instruction", "Step 2: exact instruction"]
+      }
     ],
-    "structured_data_recommendations": ["specific schema.org or technical SEO recommendations"],
-    "third_party_actions": ["specific actions on third-party platforms"],
-    "quick_wins": ["actions that can be done this week with immediate impact"],
-    "long_term_plays": ["strategic moves for sustained AEO improvement"]
+    "new_content_to_create": [
+      {
+        "priority": "high|medium|low",
+        "type": "FAQ page|Comparison page|Blog post|Case study|Landing page",
+        "topic": "Specific page title",
+        "draft_outline": ["H1: Exact heading", "H2: Section heading (what to cover)", "H2: Another section"],
+        "target_queries": [1,2,3],
+        "target_providers": ["chatgpt","gemini"],
+        "rationale": "Why this content is needed, with data from the audit",
+        "suggested_scope": "Detailed description of what to cover",
+        "estimated_impact": "high|medium|low",
+        "effort": "low|medium|high"
+      }
+    ],
+    "quick_wins": [
+      {
+        "action": "Specific action with exact details",
+        "steps": ["Step 1", "Step 2"],
+        "estimated_impact": "high|medium|low",
+        "effort": "low"
+      }
+    ],
+    "long_term_plays": [
+      {
+        "action": "Strategic action with specifics",
+        "steps": ["Step 1", "Step 2"],
+        "estimated_impact": "high|medium|low",
+        "effort": "medium|high"
+      }
+    ],
+    "structured_data_recommendations": ["Specific schema.org markup to add, with exact page URLs"],
+    "third_party_actions": ["Specific actions on named third-party platforms"]
   }
 }
 
-Be specific to ${brand.name}'s business (${brand.category}). Reference actual findings from the analysis. Prioritize by expected impact on AI visibility.`
+Generate 3-5 items for existing_content_to_update (most important), 3-5 for new_content_to_create, 3-5 quick_wins, 2-3 long_term_plays. Every item must reference specific audit findings.`
         );
 
         try {

@@ -275,6 +275,7 @@ export async function runAudit(auditId: string) {
 
       const analysis = await generateAnalysis(analysisInput, {
         name: brand.name,
+        website: brand.website || "",
         location: brand.location,
         category: brand.category,
         features: brand.features,

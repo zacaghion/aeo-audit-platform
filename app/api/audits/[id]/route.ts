@@ -47,6 +47,17 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ message: "Audit resumed (duplicates cleaned)", auditId: audit.id });
 }
 
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const audit = await prisma.audit.findUnique({ where: { id: params.id }, include: { prompts: true } });
+  if (!audit) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  for (const p of audit.prompts) {
+    await prisma.response.deleteMany({ where: { promptId: p.id } });
+  }
+  await prisma.prompt.deleteMany({ where: { auditId: params.id } });
+  await prisma.audit.delete({ where: { id: params.id } });
+  return NextResponse.json({ message: "Audit deleted" });
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const { status } = await req.json();
   if (!["ERROR", "COMPLETE"].includes(status)) {

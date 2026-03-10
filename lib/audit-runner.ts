@@ -272,7 +272,7 @@ export async function runAudit(auditId: string) {
         })),
       }));
 
-      const analysis = generateAnalysis(analysisInput, {
+      const analysis = await generateAnalysis(analysisInput, {
         name: brand.name,
         location: brand.location,
         category: brand.category,

@@ -24,6 +24,11 @@ export function AnalysisTab({ analysis }: { analysis: AnalysisOutput }) {
         <Card>
           <CardHeader><CardTitle>Sentiment Analysis</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            {analysis.sentiment_analysis.narrative && (
+              <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap text-muted-foreground">
+                {analysis.sentiment_analysis.narrative}
+              </div>
+            )}
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <div className="text-3xl font-bold font-mono">{analysis.sentiment_analysis.sentiment_score}</div>
@@ -92,6 +97,11 @@ export function AnalysisTab({ analysis }: { analysis: AnalysisOutput }) {
         <Card>
           <CardHeader><CardTitle>Brand Visibility</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            {analysis.brand_visibility.narrative && (
+              <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap text-muted-foreground">
+                {analysis.brand_visibility.narrative}
+              </div>
+            )}
             <div className="flex items-center gap-6">
               <div className="text-center">
                 <div className="text-4xl font-bold font-mono">{analysis.brand_visibility.overall_score}</div>
@@ -149,6 +159,11 @@ export function AnalysisTab({ analysis }: { analysis: AnalysisOutput }) {
         <Card>
           <CardHeader><CardTitle>Competitive Positioning</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            {analysis.competitive_positioning.narrative && (
+              <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap text-muted-foreground">
+                {analysis.competitive_positioning.narrative}
+              </div>
+            )}
             {analysis.competitive_positioning.primary_competitors?.length > 0 && (
               <Table>
                 <TableHeader>
@@ -200,6 +215,11 @@ export function AnalysisTab({ analysis }: { analysis: AnalysisOutput }) {
         <Card>
           <CardHeader><CardTitle>Content Gaps</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            {analysis.content_gaps.narrative && (
+              <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap text-muted-foreground">
+                {analysis.content_gaps.narrative}
+              </div>
+            )}
             <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <h4 className="text-sm font-medium mb-2">Missing Topics</h4>

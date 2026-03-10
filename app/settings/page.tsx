@@ -16,6 +16,8 @@ const PROVIDERS = [
   { id: "gemini", label: "Gemini (Google)", model: "gemini-2.5-flash", keyUrl: "https://aistudio.google.com/apikey", cost: "~$1.75" },
   { id: "grok", label: "Grok (xAI)", model: "grok-3-mini-fast", keyUrl: "https://console.x.ai", cost: "~$1.50" },
   { id: "deepseek", label: "DeepSeek", model: "deepseek-chat", keyUrl: "https://platform.deepseek.com/api_keys", cost: "~$0.07" },
+  { id: "claude-analysis", label: "Claude (Analysis)", model: "claude-sonnet-4-20250514", keyUrl: "https://console.anthropic.com/settings/keys", cost: "~$0.05/audit" },
+  { id: "claude-recommendations", label: "Claude (Recommendations)", model: "claude-sonnet-4-20250514", keyUrl: "https://console.anthropic.com/settings/keys", cost: "~$0.05/audit" },
 ];
 
 interface KeyStatus {

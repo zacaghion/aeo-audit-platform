@@ -19,13 +19,15 @@ export const providerQueryMap: Record<ProviderName, QueryFn> = {
   deepseek: queryDeepSeek,
 };
 
-export const providerTestMap: Record<ProviderName, TestFn> = {
+export const providerTestMap: Record<string, TestFn> = {
   claude: testClaudeKey,
   chatgpt: testChatGPTKey,
   perplexity: testPerplexityKey,
   gemini: testGeminiKey,
   grok: testGrokKey,
   deepseek: testDeepSeekKey,
+  "claude-analysis": testClaudeKey,
+  "claude-recommendations": testClaudeKey,
 };
 
 export { PROVIDERS, PROVIDER_INFO, SYSTEM_PROMPT } from "./types";

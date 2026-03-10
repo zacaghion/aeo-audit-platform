@@ -30,6 +30,7 @@ export interface ResponseAnalysis {
 export interface AnalysisOutput {
   executive_summary: string;
   sentiment_analysis: {
+    narrative: string;
     overall_sentiment: string;
     sentiment_score: number;
     positive_themes: string[];
@@ -39,6 +40,7 @@ export interface AnalysisOutput {
     provider_comparison: Record<string, { sentiment: string; score: number }>;
   };
   brand_visibility: {
+    narrative: string;
     overall_score: number;
     provider_scores: Record<string, number>;
     category_scores: Record<string, number>;
@@ -56,6 +58,7 @@ export interface AnalysisOutput {
     provider_ranking: string[];
   };
   competitive_positioning: {
+    narrative: string;
     primary_competitors: Array<{
       name: string;
       total_mentions: number;
@@ -70,6 +73,7 @@ export interface AnalysisOutput {
     competitive_disadvantages: string[];
   };
   content_gaps: {
+    narrative: string;
     missing_topics: string[];
     underrepresented_features: string[];
     missing_use_cases: string[];

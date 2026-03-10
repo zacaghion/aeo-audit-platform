@@ -136,10 +136,10 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="raw">Raw Data</TabsTrigger>
           {analysis && <TabsTrigger value="analysis">Analysis</TabsTrigger>}
           {analysis && <TabsTrigger value="recommendations">Recommendations</TabsTrigger>}
           {analysis?.benchmark && <TabsTrigger value="benchmark">Benchmark</TabsTrigger>}
+          <TabsTrigger value="raw">Raw Data</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
           <OverviewTab audit={audit} />

@@ -11,6 +11,7 @@ import {
   LayoutDashboard, MessageSquare, Swords, Lightbulb, Database,
 } from "lucide-react";
 import { DeleteAuditButton } from "@/components/delete-audit-button";
+import { useCountUp } from "@/lib/use-count-up";
 import { OverviewSection } from "./overview-tab";
 import { VisibilitySection } from "./visibility-section";
 import { SentimentSection } from "./sentiment-section";
@@ -60,6 +61,12 @@ const SECTIONS = [
   { id: "raw", label: "Raw Data", icon: Database },
 ];
 
+function AnimatedNumber({ value, suffix = "" }: { value: number | null | undefined; suffix?: string }) {
+  const num = useCountUp(value ?? 0);
+  if (value == null) return <>—{suffix}</>;
+  return <>{num}{suffix}</>;
+}
+
 export function AuditDetail({ audit }: { audit: AuditData }) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState("overview");
@@ -106,10 +113,10 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
                   className={cn(
-                    "flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
                     activeSection === section.id
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-indigo-500/10 text-indigo-400 border-l-2 border-l-indigo-500"
+                      : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -121,7 +128,7 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
 
           <div className="space-y-2 pt-4 border-t border-border">
             {audit.status === "COMPLETE" && (
-              <Button onClick={handleExport} variant="outline" size="sm" className="w-full justify-start">
+              <Button onClick={handleExport} variant="outline" size="sm" className="w-full justify-start border-[#374151] text-gray-400 hover:text-white">
                 <Download className="mr-2 h-4 w-4" /> Export
               </Button>
             )}
@@ -139,49 +146,49 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
       <div className="flex-1 min-w-0 space-y-6">
         {/* Score Cards */}
         {summary && activeSection === "overview" && (
-          <div className="grid gap-4 md:grid-cols-4">
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
+          <div className="grid gap-4 md:grid-cols-5">
+            <Card className="bg-[#111827] border border-[#1F2937] rounded-xl border-t-2 border-t-emerald-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Mention Rate</CardTitle>
+                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider">Mention Rate</CardTitle>
                 <Eye className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-mono bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                  {summary.mentionRate}%
+                <div className="text-3xl font-bold font-mono text-white">
+                  <AnimatedNumber value={summary.mentionRate} suffix="%" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
+            <Card className="md:col-span-2 bg-[#111827] border border-[#1F2937] rounded-xl border-t-2 border-t-indigo-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Visibility</CardTitle>
+                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider">Visibility</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-mono bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
-                  {analysis?.brand_visibility?.overall_score ?? "—"}/100
+                <div className="text-5xl font-bold font-mono text-white">
+                  <AnimatedNumber value={analysis?.brand_visibility?.overall_score} suffix="/100" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
+            <Card className="bg-[#111827] border border-[#1F2937] rounded-xl border-t-2 border-t-violet-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Sentiment</CardTitle>
+                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider">Sentiment</CardTitle>
                 <Shield className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-mono bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
-                  {analysis?.sentiment_analysis?.sentiment_score ?? "—"}/100
+                <div className="text-3xl font-bold font-mono text-white">
+                  <AnimatedNumber value={analysis?.sentiment_analysis?.sentiment_score} suffix="/100" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
+            <Card className="bg-[#111827] border border-[#1F2937] rounded-xl border-t-2 border-t-amber-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                   {analysis?.benchmark ? "Rank" : "Top Threat"}
                 </CardTitle>
                 {analysis?.benchmark ? <Trophy className="h-4 w-4 text-muted-foreground" /> : <AlertTriangle className="h-4 w-4 text-muted-foreground" />}
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-mono bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+                <div className="text-3xl font-bold font-mono text-white">
                   {analysis?.benchmark
                     ? `#${analysis.benchmark.rank} of ${analysis.benchmark.totalCompetitors}`
                     : summary.topCompetitors?.[0]?.name ?? "—"}

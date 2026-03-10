@@ -29,6 +29,15 @@ interface RawDataProps {
   }>;
 }
 
+function sentimentColorClass(sentiment: string | null): string {
+  if (!sentiment) return "text-gray-400";
+  const s = sentiment.toLowerCase();
+  if (s === "positive") return "text-emerald-400";
+  if (s === "negative") return "text-red-400";
+  if (s === "mixed") return "text-amber-400";
+  return "text-gray-400";
+}
+
 const PAGE_SIZE = 50;
 
 export function RawDataTab({ prompts }: RawDataProps) {
@@ -131,7 +140,7 @@ export function RawDataTab({ prompts }: RawDataProps) {
             <>
               <TableRow
                 key={row.key}
-                className="cursor-pointer"
+                className="cursor-pointer hover:bg-[#1a2332] transition-colors duration-200"
                 onClick={() => setExpanded(expanded === row.key ? null : row.key)}
               >
                 <TableCell>
@@ -153,12 +162,18 @@ export function RawDataTab({ prompts }: RawDataProps) {
                 <TableCell><Badge variant="outline" className="text-xs">{row.category}</Badge></TableCell>
                 <TableCell className="capitalize">{row.provider}</TableCell>
                 <TableCell>
-                  <Badge variant={row.brandMentioned ? "success" : "destructive"}>
-                    {row.brandMentioned ? "Yes" : "No"}
-                  </Badge>
+                  {row.brandMentioned ? (
+                    <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs rounded-full px-2 py-0.5">
+                      Yes
+                    </span>
+                  ) : (
+                    <span className="bg-red-500/10 text-red-400 border border-red-500/20 text-xs rounded-full px-2 py-0.5">
+                      No
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="font-mono text-xs">{row.mentionPosition || "—"}</TableCell>
-                <TableCell className="text-xs">{row.mentionSentiment || "—"}</TableCell>
+                <TableCell className={`text-xs ${sentimentColorClass(row.mentionSentiment)}`}>{row.mentionSentiment || "—"}</TableCell>
                 <TableCell className="font-mono text-xs">{(row.competitorsMentioned as string[]).length}</TableCell>
                 <TableCell className="text-right font-mono text-xs">{row.answerLength.toLocaleString()}</TableCell>
               </TableRow>

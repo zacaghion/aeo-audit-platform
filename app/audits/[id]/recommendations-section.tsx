@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Copy, Check, ExternalLink, ChevronRight } from "lucide-react";
+import { PROVIDER_COLORS } from "@/lib/chart-theme";
 import type { AnalysisOutput } from "@/types";
 
 /* ── Helpers ── */
@@ -12,12 +13,11 @@ import type { AnalysisOutput } from "@/types";
 function impactBadge(impact?: string) {
   if (!impact) return null;
   const lower = impact.toLowerCase();
-  let variant: "success" | "warning" | "destructive" | "secondary" = "secondary";
-  if (lower.includes("high")) variant = "success";
-  else if (lower.includes("medium")) variant = "warning";
-  else if (lower.includes("low")) variant = "destructive";
+  let cls = "bg-gray-500/20 text-gray-400 border-transparent";
+  if (lower.includes("high")) cls = "bg-emerald-500/20 text-emerald-400 border-transparent";
+  else if (lower.includes("medium")) cls = "bg-amber-500/20 text-amber-400 border-transparent";
   return (
-    <Badge variant={variant} className="text-xs">
+    <Badge className={`text-xs ${cls}`}>
       {impact} impact
     </Badge>
   );
@@ -36,19 +36,16 @@ function effortBadge(effort?: string) {
   );
 }
 
-function priorityBadgeVariant(
-  priority: string,
-): "success" | "warning" | "destructive" | "secondary" {
-  switch (priority.toLowerCase()) {
-    case "high":
-      return "success";
-    case "medium":
-      return "warning";
-    case "low":
-      return "destructive";
-    default:
-      return "secondary";
-  }
+function priorityBadge(priority: string) {
+  const lower = priority.toLowerCase();
+  let cls = "bg-gray-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full";
+  if (lower === "high") cls = "bg-red-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full";
+  else if (lower === "medium") cls = "bg-amber-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full";
+  return (
+    <span className={cls}>
+      {priority} priority
+    </span>
+  );
 }
 
 /* ── ActionItem: shared layout for quick_wins / long_term_plays ── */
@@ -66,11 +63,11 @@ function ActionItem({
 
   if (typeof item === "string") {
     return (
-      <Card>
+      <Card className="bg-[#111827] border border-[#1F2937] rounded-xl">
         <CardContent className="pt-6">
           <div className="flex items-start gap-2">
-            <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-            <p className="text-sm text-foreground">{item}</p>
+            <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-gray-500" />
+            <p className="text-sm text-gray-300">{item}</p>
           </div>
         </CardContent>
       </Card>
@@ -78,20 +75,23 @@ function ActionItem({
   }
 
   return (
-    <Card>
+    <Card className="bg-[#111827] border border-[#1F2937] rounded-xl">
       <CardContent className="pt-6 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           {impactBadge(item.estimated_impact)}
           {effortBadge(item.effort)}
         </div>
         <div className="flex items-start gap-2">
-          <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">{item.action}</p>
+          <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-gray-500" />
+          <p className="text-sm font-medium text-white">{item.action}</p>
         </div>
         {item.steps && item.steps.length > 0 && (
-          <ol className="list-decimal list-inside space-y-1 pl-6 text-sm text-muted-foreground">
+          <ol className="space-y-1 pl-6 text-sm text-gray-300">
             {item.steps.map((step, j) => (
-              <li key={j}>{step}</li>
+              <li key={j} className="flex items-start gap-2">
+                <span className="text-indigo-400 font-semibold">{j + 1}.</span>
+                <span>{step}</span>
+              </li>
             ))}
           </ol>
         )}
@@ -148,12 +148,15 @@ export function RecommendationsSection({
          ═══════════════════════════════════════════════ */}
       {recommendations.existing_content_to_update?.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            🔧 Existing Content to Update
-            <Badge variant="secondary" className="text-xs">
-              {recommendations.existing_content_to_update.length} items
-            </Badge>
-          </h3>
+          <div>
+            <p className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-1">Actionable</p>
+            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+              🔧 Existing Content to Update
+              <Badge variant="secondary" className="text-xs">
+                {recommendations.existing_content_to_update.length} items
+              </Badge>
+            </h3>
+          </div>
           <div className="space-y-4">
             {recommendations.existing_content_to_update.map((item, i) => {
               const itemId = `existing-${i}`;
@@ -166,7 +169,7 @@ export function RecommendationsSection({
               const estimatedImpact = item.estimated_impact || item.expected_impact;
 
               return (
-                <Card key={i}>
+                <Card key={i} className="bg-[#111827] border border-[#1F2937] rounded-xl">
                   <CardHeader className="pb-3">
                     {/* Top row: impact / effort / page_type badges */}
                     <div className="flex flex-wrap items-center gap-2">
@@ -177,12 +180,7 @@ export function RecommendationsSection({
                           {item.page_type}
                         </Badge>
                       )}
-                      <Badge
-                        variant={priorityBadgeVariant(item.priority)}
-                        className="text-xs capitalize"
-                      >
-                        {item.priority} priority
-                      </Badge>
+                      {priorityBadge(item.priority)}
                     </div>
 
                     {/* Page URL */}
@@ -206,7 +204,7 @@ export function RecommendationsSection({
                         <span className="text-xs font-medium text-red-400 uppercase tracking-wide">
                           {hasNewFields ? "Current State" : "Issue"}
                         </span>
-                        <div className="mt-1.5 rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2">
+                        <div className="mt-1.5 border-l-4 border-red-500 bg-red-500/10 p-4 rounded-r-lg">
                           <p className="text-sm text-red-300">{currentState}</p>
                         </div>
                       </div>
@@ -219,15 +217,13 @@ export function RecommendationsSection({
                           <span className="text-xs font-medium text-emerald-400 uppercase tracking-wide">
                             {hasNewFields ? "Suggested Revision" : "Fix"}
                           </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                          <button
+                            className="bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-medium px-3 py-1 rounded-md transition-colors inline-flex items-center"
                             onClick={() => handleCopy(suggestedRevision, itemId)}
                           >
                             {copiedId === itemId ? (
                               <>
-                                <Check className="h-3.5 w-3.5 mr-1 text-emerald-400" />
+                                <Check className="h-3.5 w-3.5 mr-1 text-white" />
                                 Copied
                               </>
                             ) : (
@@ -236,9 +232,9 @@ export function RecommendationsSection({
                                 Copy
                               </>
                             )}
-                          </Button>
+                          </button>
                         </div>
-                        <div className="mt-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
+                        <div className="mt-1.5 border-l-4 border-emerald-500 bg-emerald-500/10 p-4 rounded-r-lg">
                           <p className="text-sm text-emerald-300">{suggestedRevision}</p>
                         </div>
                       </div>
@@ -246,16 +242,19 @@ export function RecommendationsSection({
 
                     {/* Rationale */}
                     {item.rationale && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-gray-400">
                         {item.rationale}
                       </p>
                     )}
 
                     {/* Steps */}
                     {item.steps && item.steps.length > 0 && (
-                      <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+                      <ol className="space-y-1 text-sm text-gray-300">
                         {item.steps.map((step, j) => (
-                          <li key={j}>{step}</li>
+                          <li key={j} className="flex items-start gap-2">
+                            <span className="text-indigo-400 font-semibold">{j + 1}.</span>
+                            <span>{step}</span>
+                          </li>
                         ))}
                       </ol>
                     )}
@@ -272,31 +271,29 @@ export function RecommendationsSection({
          ═══════════════════════════════════════════════ */}
       {recommendations.new_content_to_create?.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            ✏️ New Content to Create
-            <Badge variant="secondary" className="text-xs">
-              {recommendations.new_content_to_create.length} items
-            </Badge>
-          </h3>
+          <div>
+            <p className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-1">Content Strategy</p>
+            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+              ✏️ New Content to Create
+              <Badge variant="secondary" className="text-xs">
+                {recommendations.new_content_to_create.length} items
+              </Badge>
+            </h3>
+          </div>
           <div className="space-y-4">
             {recommendations.new_content_to_create.map((item, i) => {
               const itemId = `new-content-${i}`;
               if (dismissed.has(itemId)) return null;
 
               return (
-                <Card key={i}>
+                <Card key={i} className="bg-[#111827] border border-[#1F2937] rounded-xl">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base">{item.topic}</CardTitle>
+                    <CardTitle className="text-base text-white">{item.topic}</CardTitle>
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                       <Badge variant="outline" className="text-xs">
                         {item.type}
                       </Badge>
-                      <Badge
-                        variant={priorityBadgeVariant(item.priority)}
-                        className="text-xs capitalize"
-                      >
-                        {item.priority} priority
-                      </Badge>
+                      {priorityBadge(item.priority)}
                       {impactBadge(item.estimated_impact)}
                       {effortBadge(item.effort)}
                     </div>
@@ -306,12 +303,12 @@ export function RecommendationsSection({
                     {/* Draft Outline */}
                     {item.draft_outline && item.draft_outline.length > 0 && (
                       <div>
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
                           Draft Outline
                         </span>
-                        <div className="mt-1.5 rounded-md bg-muted/50 border border-border px-3 py-2">
+                        <div className="mt-1.5 rounded-md bg-[#1F2937]/50 border border-[#1F2937] px-3 py-2">
                           {item.draft_outline.map((line, j) => (
-                            <p key={j} className="text-sm text-muted-foreground pl-4">
+                            <p key={j} className="text-sm text-gray-300 pl-4">
                               {line}
                             </p>
                           ))}
@@ -320,17 +317,17 @@ export function RecommendationsSection({
                     )}
 
                     {/* Rationale */}
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-gray-400">
                       {item.rationale}
                     </p>
 
                     {/* Scope */}
                     {item.suggested_scope && (
                       <div>
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
                           Scope
                         </span>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-sm text-gray-300 mt-1">
                           {item.suggested_scope}
                         </p>
                       </div>
@@ -339,15 +336,19 @@ export function RecommendationsSection({
                     {/* Target providers */}
                     {item.target_providers?.length > 0 && (
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground mr-1">
+                        <span className="text-xs text-gray-400 mr-1">
                           Target providers:
                         </span>
                         {item.target_providers.map((provider) => (
                           <Badge
                             key={provider}
                             variant="secondary"
-                            className="text-xs"
+                            className="text-xs inline-flex items-center"
                           >
+                            <span
+                              className="inline-block w-2 h-2 rounded-full mr-1"
+                              style={{ backgroundColor: PROVIDER_COLORS[provider.toLowerCase()] || '#6366F1' }}
+                            />
                             {provider}
                           </Badge>
                         ))}
@@ -366,12 +367,15 @@ export function RecommendationsSection({
          ═══════════════════════════════════════════════ */}
       {recommendations.quick_wins?.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            ⚡ Quick Wins
-            <Badge variant="success" className="text-xs">
-              {recommendations.quick_wins.length} items
-            </Badge>
-          </h3>
+          <div>
+            <p className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-1">Low Effort</p>
+            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+              ⚡ Quick Wins
+              <Badge variant="success" className="text-xs">
+                {recommendations.quick_wins.length} items
+              </Badge>
+            </h3>
+          </div>
           <div className="space-y-3">
             {recommendations.quick_wins.map((item, i) => {
               const itemId = `quick-win-${i}`;
@@ -393,12 +397,15 @@ export function RecommendationsSection({
          ═══════════════════════════════════════════════ */}
       {recommendations.long_term_plays?.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            🎯 Long-Term Plays
-            <Badge variant="warning" className="text-xs">
-              {recommendations.long_term_plays.length} items
-            </Badge>
-          </h3>
+          <div>
+            <p className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-1">Strategic</p>
+            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+              🎯 Long-Term Plays
+              <Badge variant="warning" className="text-xs">
+                {recommendations.long_term_plays.length} items
+              </Badge>
+            </h3>
+          </div>
           <div className="space-y-3">
             {recommendations.long_term_plays.map((item, i) => {
               const itemId = `long-term-${i}`;
@@ -420,13 +427,16 @@ export function RecommendationsSection({
          ═══════════════════════════════════════════════ */}
       {technicalItems.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            🛠 Technical Recommendations
-            <Badge variant="outline" className="text-xs">
-              {technicalItems.length} items
-            </Badge>
-          </h3>
-          <Card>
+          <div>
+            <p className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-1">Implementation</p>
+            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+              🛠 Technical Recommendations
+              <Badge variant="outline" className="text-xs">
+                {technicalItems.length} items
+              </Badge>
+            </h3>
+          </div>
+          <Card className="bg-[#111827] border border-[#1F2937] rounded-xl">
             <CardContent className="pt-6">
               <ul className="space-y-3">
                 {technicalItems.map((item, i) => {
@@ -441,7 +451,7 @@ export function RecommendationsSection({
                         className={`mt-0.5 shrink-0 flex items-center justify-center h-5 w-5 rounded-full border-2 transition-all duration-200 ${
                           isChecked
                             ? "border-emerald-500 bg-emerald-500/20"
-                            : "border-muted-foreground/40 group-hover:border-muted-foreground"
+                            : "border-gray-600 group-hover:border-gray-400"
                         }`}
                       >
                         {isChecked && (
@@ -457,8 +467,8 @@ export function RecommendationsSection({
                         <p
                           className={`text-sm transition-all duration-200 ${
                             isChecked
-                              ? "line-through text-muted-foreground/60"
-                              : "text-muted-foreground"
+                              ? "line-through text-gray-600"
+                              : "text-gray-300"
                           }`}
                         >
                           {item.label}

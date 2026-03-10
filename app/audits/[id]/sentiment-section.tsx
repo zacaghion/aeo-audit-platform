@@ -4,20 +4,25 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
   YAxis,
   Tooltip,
-  Cell,
+  ResponsiveContainer,
 } from "recharts";
+import {
+  PROVIDER_COLORS,
+  getProviderColor,
+  SENTIMENT_COLORS,
+  CHART_TOOLTIP_STYLE,
+  CHART_ANIM,
+  AXIS_STYLE,
+  GRID_STYLE,
+} from "@/lib/chart-theme";
 import type { AnalysisOutput } from "@/types";
+
+/* ── helpers ─────────────────────────────────────────────────────────── */
 
 function sentimentColor(sentiment: string): string {
   switch (sentiment.toLowerCase()) {
@@ -45,60 +50,99 @@ function sentimentBadgeVariant(
   }
 }
 
+function scoreRingColor(score: number): string {
+  if (score >= 67) return "#10B981";
+  if (score >= 34) return "#F59E0B";
+  return "#EF4444";
+}
+
+/* ── Score Ring ──────────────────────────────────────────────────────── */
+
 function ScoreRing({ score }: { score: number }) {
+  const size = 140;
   const radius = 54;
   const stroke = 8;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;
+  const color = scoreRingColor(score);
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <svg width={140} height={140} className="-rotate-90">
+      <svg width={size} height={size} className="-rotate-90">
         <circle
-          cx={70}
-          cy={70}
+          cx={size / 2}
+          cy={size / 2}
           r={radius}
           fill="none"
-          stroke="hsl(var(--muted))"
+          stroke="#1F2937"
           strokeWidth={stroke}
         />
         <circle
-          cx={70}
-          cy={70}
+          cx={size / 2}
+          cy={size / 2}
           r={radius}
           fill="none"
-          stroke="hsl(var(--primary))"
+          stroke={color}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 800ms ease-out" }}
         />
       </svg>
       <div
         className="absolute flex flex-col items-center justify-center"
-        style={{ width: 140, height: 140 }}
+        style={{ width: size, height: size }}
       >
-        <span className="text-4xl font-bold font-mono">{score}</span>
-        <span className="text-xs text-muted-foreground">/ 100</span>
+        <span className="text-4xl font-bold font-mono" style={{ color }}>
+          {score}
+        </span>
+        <span className="text-xs text-[#6B7280]">/ 100</span>
       </div>
     </div>
   );
 }
 
-const tooltipStyle = {
-  backgroundColor: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
-};
+/* ── Custom bar label ────────────────────────────────────────────────── */
+
+function BarLabel(props: {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  value?: number;
+}) {
+  const { x = 0, y = 0, width = 0, height = 0, value = 0 } = props;
+  if (value < 8 || width < 28) return null;
+  return (
+    <text
+      x={x + width / 2}
+      y={y + height / 2 + 4}
+      textAnchor="middle"
+      fill="#fff"
+      fontSize={11}
+      fontWeight={600}
+    >
+      {value}%
+    </text>
+  );
+}
+
+/* ── Main Component ──────────────────────────────────────────────────── */
 
 export function SentimentSection({ analysis }: { analysis: AnalysisOutput }) {
   const sa = analysis.sentiment_analysis;
 
-  const radarData = useMemo(
+  /* Stacked bar data: distribute score into positive / mixed / negative */
+  const stackedData = useMemo(
     () =>
-      Object.entries(sa.provider_comparison || {}).map(([name, data]) => ({
-        provider: name,
-        score: data.score,
-      })),
+      Object.entries(sa.provider_comparison || {}).map(([name, data]) => {
+        const s = data.score;
+        const positive = Math.round(Math.max(0, s - 33) * (100 / 67));
+        const negative = Math.round(Math.max(0, 67 - s) * (100 / 67));
+        const mixed = Math.max(0, 100 - positive - negative);
+        return { provider: name, positive, mixed, negative };
+      }),
     [sa.provider_comparison],
   );
 
@@ -112,23 +156,25 @@ export function SentimentSection({ analysis }: { analysis: AnalysisOutput }) {
     [sa.provider_comparison],
   );
 
+  const cardClass = "bg-[#111827] border border-[#1F2937] rounded-xl";
+
   return (
     <div className="space-y-6">
-      {/* Narrative */}
+      {/* ── Narrative ────────────────────────────────────────────────── */}
       {sa.narrative && (
-        <Card>
+        <Card className={cardClass}>
           <CardContent className="pt-6">
-            <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap text-muted-foreground">
+            <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap text-[#9CA3AF]">
               {sa.narrative}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Score Ring + Overall Sentiment Badge */}
-      <Card>
+      {/* ── Score Ring + Overall Sentiment Badge ─────────────────────── */}
+      <Card className={cardClass}>
         <CardHeader>
-          <CardTitle>Sentiment Score</CardTitle>
+          <CardTitle className="text-white">Sentiment Score</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center gap-6">
           <div className="relative flex items-center justify-center">
@@ -143,159 +189,174 @@ export function SentimentSection({ analysis }: { analysis: AnalysisOutput }) {
         </CardContent>
       </Card>
 
-      {/* Radar Chart – Sentiment by Provider */}
-      {radarData.length > 0 && (
-        <Card>
+      {/* ── Horizontal Stacked Bars – Sentiment by Provider ──────────── */}
+      {stackedData.length > 0 && (
+        <Card className={cardClass}>
           <CardHeader>
-            <CardTitle>Sentiment by Provider</CardTitle>
+            <CardTitle className="text-white">
+              Sentiment by Provider
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <RadarChart data={radarData}>
-                <PolarGrid stroke="hsl(var(--border))" />
-                <PolarAngleAxis
-                  dataKey="provider"
-                  tick={{
-                    fill: "hsl(var(--muted-foreground))",
-                    fontSize: 12,
-                  }}
-                />
-                <PolarRadiusAxis
-                  domain={[0, 100]}
-                  tick={{
-                    fill: "hsl(var(--muted-foreground))",
-                    fontSize: 10,
-                  }}
-                  axisLine={false}
-                />
-                <Radar
-                  dataKey="score"
-                  stroke="#8b5cf6"
-                  fill="#8b5cf6"
-                  fillOpacity={0.35}
-                />
-                <Tooltip contentStyle={tooltipStyle} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Bar Chart – Provider Sentiment Bars */}
-      {barData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Provider Sentiment Bars</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer
+              width="100%"
+              height={Math.max(200, stackedData.length * 52 + 32)}
+            >
               <BarChart
-                data={barData}
-                margin={{ top: 16, right: 16, bottom: 0, left: 0 }}
+                data={stackedData}
+                layout="vertical"
+                margin={{ top: 4, right: 24, bottom: 4, left: 12 }}
+                barCategoryGap="20%"
               >
                 <XAxis
-                  dataKey="name"
-                  tick={{
-                    fill: "hsl(var(--muted-foreground))",
-                    fontSize: 12,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
+                  type="number"
+                  domain={[0, 100]}
+                  hide
                 />
                 <YAxis
-                  domain={[0, 100]}
-                  tick={{
-                    fill: "hsl(var(--muted-foreground))",
-                    fontSize: 12,
+                  type="category"
+                  dataKey="provider"
+                  width={100}
+                  {...AXIS_STYLE}
+                  tick={(tickProps: { x: number; y: number; payload: { value: string } }) => {
+                    const { x, y, payload } = tickProps;
+                    const color = getProviderColor(payload.value);
+                    return (
+                      <g transform={`translate(${x},${y})`}>
+                        <circle cx={-12} cy={0} r={4} fill={color} />
+                        <text
+                          x={-22}
+                          y={0}
+                          dy={4}
+                          textAnchor="end"
+                          fill="#9CA3AF"
+                          fontSize={12}
+                          className="capitalize"
+                        >
+                          {payload.value}
+                        </text>
+                      </g>
+                    );
                   }}
-                  axisLine={false}
-                  tickLine={false}
                 />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="score" radius={[4, 4, 0, 0]}>
-                  {barData.map((entry) => (
-                    <Cell
-                      key={entry.name}
-                      fill={sentimentColor(entry.sentiment)}
-                    />
-                  ))}
-                </Bar>
+                <Tooltip
+                  contentStyle={CHART_TOOLTIP_STYLE}
+                  labelStyle={{ color: "#F9FAFB", fontWeight: 600 }}
+                  itemStyle={{ color: "#D1D5DB" }}
+                  formatter={(value: number, name: string) => [
+                    `${value}%`,
+                    name.charAt(0).toUpperCase() + name.slice(1),
+                  ]}
+                />
+                <Bar
+                  dataKey="positive"
+                  stackId="sentiment"
+                  fill="#10B981"
+                  radius={[4, 0, 0, 4]}
+                  label={<BarLabel />}
+                  {...CHART_ANIM}
+                />
+                <Bar
+                  dataKey="mixed"
+                  stackId="sentiment"
+                  fill="#F59E0B"
+                  radius={[0, 0, 0, 0]}
+                  label={<BarLabel />}
+                  {...CHART_ANIM}
+                />
+                <Bar
+                  dataKey="negative"
+                  stackId="sentiment"
+                  fill="#EF4444"
+                  radius={[0, 4, 4, 0]}
+                  label={<BarLabel />}
+                  {...CHART_ANIM}
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       )}
 
-      {/* Theme Tags – 3 Column Grid */}
+      {/* ── Theme Tags – 3 Column Grid ───────────────────────────────── */}
       <div className="grid md:grid-cols-3 gap-4">
         {/* Positive Themes */}
-        <Card>
+        <Card className={cardClass}>
           <CardHeader>
-            <CardTitle className="text-base">Positive Themes</CardTitle>
+            <CardTitle className="text-base text-white">
+              Positive Themes
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {sa.positive_themes?.length > 0 ? (
                 sa.positive_themes.map((theme) => (
-                  <Badge key={theme} variant="success" className="text-xs">
+                  <span
+                    key={theme}
+                    className="rounded-full px-3 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  >
                     {theme}
-                  </Badge>
+                  </span>
                 ))
               ) : (
-                <span className="text-sm text-muted-foreground">None</span>
+                <span className="text-sm text-[#6B7280]">None</span>
               )}
             </div>
           </CardContent>
         </Card>
 
         {/* Negative Themes */}
-        <Card>
+        <Card className={cardClass}>
           <CardHeader>
-            <CardTitle className="text-base">Negative Themes</CardTitle>
+            <CardTitle className="text-base text-white">
+              Negative Themes
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {sa.negative_themes?.length > 0 ? (
                 sa.negative_themes.map((theme) => (
-                  <Badge
+                  <span
                     key={theme}
-                    variant="destructive"
-                    className="text-xs"
+                    className="rounded-full px-3 py-1 text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20"
                   >
                     {theme}
-                  </Badge>
+                  </span>
                 ))
               ) : (
-                <span className="text-sm text-muted-foreground">None</span>
+                <span className="text-sm text-[#6B7280]">None</span>
               )}
             </div>
           </CardContent>
         </Card>
 
         {/* Gaps */}
-        <Card>
+        <Card className={cardClass}>
           <CardHeader>
-            <CardTitle className="text-base">Gaps</CardTitle>
+            <CardTitle className="text-base text-white">Gaps</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {sa.neutral_gaps?.length > 0 ? (
                 sa.neutral_gaps.map((gap) => (
-                  <Badge key={gap} variant="warning" className="text-xs">
+                  <span
+                    key={gap}
+                    className="rounded-full px-3 py-1 text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                  >
                     {gap}
-                  </Badge>
+                  </span>
                 ))
               ) : (
-                <span className="text-sm text-muted-foreground">None</span>
+                <span className="text-sm text-[#6B7280]">None</span>
               )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Inaccuracies */}
+      {/* ── Inaccuracies ─────────────────────────────────────────────── */}
       {sa.inaccuracies?.length > 0 && (
-        <Card className="border-red-500/50">
+        <Card className={`${cardClass} border-red-500/50`}>
           <CardHeader>
             <CardTitle className="text-base text-red-400">
               Inaccuracies Found
@@ -306,7 +367,7 @@ export function SentimentSection({ analysis }: { analysis: AnalysisOutput }) {
               {sa.inaccuracies.map((item, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2 text-sm text-muted-foreground"
+                  className="flex items-start gap-2 text-sm text-[#9CA3AF]"
                 >
                   <span className="shrink-0 mt-0.5 h-1.5 w-1.5 rounded-full bg-red-400" />
                   {item}

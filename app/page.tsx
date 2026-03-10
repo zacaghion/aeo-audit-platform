@@ -59,7 +59,7 @@ export default async function DashboardPage() {
                 return (
                   <div key={audit.id} className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50">
                     <Link
-                      href={`/audits/${audit.id}`}
+                      href={`/audits/${audit.slug || audit.id}`}
                       className="flex-1 flex items-center justify-between min-w-0"
                     >
                       <div className="space-y-1">

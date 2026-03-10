@@ -24,6 +24,7 @@ model Brand {
 
 model Audit {
   id          String      @id @default(cuid())
+  slug        String?     @unique
   brandId     String
   brand       Brand       @relation(fields: [brandId], references: [id])
   status      AuditStatus @default(PENDING)

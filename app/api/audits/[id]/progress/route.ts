@@ -30,8 +30,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       const check = async () => {
         if (closed) return false;
         try {
-          const audit = await prisma.audit.findUnique({
-            where: { id: params.id },
+          const audit = await prisma.audit.findFirst({
+            where: { OR: [{ slug: params.id }, { id: params.id }] },
             include: {
               prompts: {
                 include: {

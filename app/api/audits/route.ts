@@ -5,6 +5,22 @@ import { prisma } from "@/lib/db";
 import { runAudit } from "@/lib/audit-runner";
 import { BUSINESS_PRESETS, type BusinessType } from "@/lib/business-presets";
 
+async function generateUniqueSlug(brandName: string): Promise<string> {
+  const name = brandName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const now = new Date();
+  const date = `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${now.getFullYear()}`;
+  const base = `${name}-${date}`;
+
+  const existing = await prisma.audit.findFirst({ where: { slug: base } });
+  if (!existing) return base;
+
+  let suffix = 2;
+  while (await prisma.audit.findFirst({ where: { slug: `${base}-${suffix}` } })) {
+    suffix++;
+  }
+  return `${base}-${suffix}`;
+}
+
 function resolveBusinessType(typeStr: string): BusinessType {
   const lower = typeStr.toLowerCase();
   if (lower.includes("hotel") || lower.includes("hostel") || lower.includes("resort")) return "hotel";
@@ -49,9 +65,12 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  const slug = await generateUniqueSlug(brand.name);
+
   const audit = await prisma.audit.create({
     data: {
       brandId: brandRecord.id,
+      slug,
       status: "PENDING",
       config: { promptCount: totalPrompts, providers, categories },
     },
@@ -62,5 +81,5 @@ export async function POST(req: NextRequest) {
     console.error("Audit runner failed:", e);
   });
 
-  return NextResponse.json({ auditId: audit.id, brandId: brandRecord.id });
+  return NextResponse.json({ auditId: audit.id, slug, brandId: brandRecord.id });
 }

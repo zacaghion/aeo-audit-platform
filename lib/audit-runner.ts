@@ -469,7 +469,10 @@ export async function queryWithKey(
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 1024 },
+          generationConfig: {
+            maxOutputTokens: 16384,
+            thinkingConfig: { thinkingBudget: 128 },
+          },
         }),
       }
     );

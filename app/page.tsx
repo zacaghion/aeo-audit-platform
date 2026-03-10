@@ -60,43 +60,43 @@ export default async function DashboardPage() {
       {latestComplete && (
         <>
           <div className="grid gap-4 md:grid-cols-5">
-            <Card>
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Mention Rate</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Mention Rate</CardTitle>
                 <Eye className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold font-mono">{mentionRate ?? "—"}%</div>
+                <div className="text-2xl font-bold font-mono bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{mentionRate ?? "—"}%</div>
                 <p className="text-xs text-muted-foreground mt-1">Across all providers</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Visibility Score</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Visibility Score</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold font-mono">{visScore ?? "—"}/100</div>
+                <div className="text-2xl font-bold font-mono bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">{visScore ?? "—"}/100</div>
                 <p className="text-xs text-muted-foreground mt-1">Brand visibility index</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Sentiment</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Sentiment</CardTitle>
                 <Shield className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold font-mono">{sentimentScore ?? "—"}/100</div>
+                <div className="text-2xl font-bold font-mono bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">{sentimentScore ?? "—"}/100</div>
                 <p className="text-xs text-muted-foreground mt-1">Overall sentiment score</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Top Threat</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Top Threat</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold font-mono truncate">
+                <div className="text-2xl font-bold font-mono truncate bg-gradient-to-r from-red-400 to-rose-400 bg-clip-text text-transparent">
                   {topCompetitors?.[0]?.name ?? "—"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -104,13 +104,13 @@ export default async function DashboardPage() {
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Competitive Rank</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Competitive Rank</CardTitle>
                 <Trophy className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold font-mono">
+                <div className="text-2xl font-bold font-mono bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
                   {benchmark ? `#${benchmark.rank} of ${benchmark.totalCompetitors}` : "—"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">vs competitive set</p>

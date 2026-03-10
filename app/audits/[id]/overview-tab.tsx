@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import type { AuditSummary } from "@/types";
 
 const PROVIDER_COLORS: Record<string, string> = {
@@ -37,6 +37,7 @@ interface Props {
   };
 }
 
+export { OverviewTab as OverviewSection };
 export function OverviewTab({ audit }: Props) {
   const summary = audit.summary;
 
@@ -105,6 +106,39 @@ export function OverviewTab({ audit }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader><CardTitle className="text-base">Category Coverage</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <RadarChart data={categories.map((cat) => ({ category: cat, rate: summary.mentionRateByCategory[cat] || 0 }))}>
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis dataKey="category" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                <Radar dataKey="rate" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base">Visibility by Provider</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={providers.map((p) => ({ provider: p, rate: summary.mentionRateByProvider?.[p] ?? 0 }))}>
+                <XAxis dataKey="provider" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
+                  {providers.map((p) => (
+                    <Cell key={p} fill={PROVIDER_COLORS[p] || "#6366f1"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader><CardTitle>Competitor Mentions</CardTitle></CardHeader>

@@ -1,16 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, TrendingUp, Shield, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Download, Eye, TrendingUp, Shield, AlertTriangle, Trophy,
+  LayoutDashboard, MessageSquare, Swords, Lightbulb, Database,
+} from "lucide-react";
 import { DeleteAuditButton } from "@/components/delete-audit-button";
-import { OverviewTab } from "./overview-tab";
-import { RawDataTab } from "./raw-data-tab";
-import { AnalysisTab } from "./analysis-tab";
+import { OverviewSection } from "./overview-tab";
+import { VisibilitySection } from "./visibility-section";
+import { SentimentSection } from "./sentiment-section";
+import { CompetitiveSection } from "./competitive-section";
 import { BenchmarkTab } from "./benchmark-tab";
+import { RecommendationsSection } from "./recommendations-section";
+import { RawDataTab } from "./raw-data-tab";
 import type { AuditSummary, AnalysisOutput } from "@/types";
 
 interface AuditData {
@@ -43,8 +50,19 @@ interface AuditData {
   }>;
 }
 
+const SECTIONS = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "visibility", label: "Visibility", icon: Eye },
+  { id: "sentiment", label: "Sentiment", icon: MessageSquare },
+  { id: "competitive", label: "Competitive", icon: Swords },
+  { id: "benchmark", label: "Benchmark", icon: Trophy },
+  { id: "recommendations", label: "Improve", icon: Lightbulb },
+  { id: "raw", label: "Raw Data", icon: Database },
+];
+
 export function AuditDetail({ audit }: { audit: AuditData }) {
   const router = useRouter();
+  const [activeSection, setActiveSection] = useState("overview");
   const summary = audit.summary;
   const analysis = audit.analysis;
 
@@ -59,193 +77,129 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
     URL.revokeObjectURL(url);
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">{audit.brand.name}</h1>
-            <Badge variant={audit.status === "COMPLETE" ? "success" : "secondary"}>
-              {audit.status.replace("_", " ")}
-            </Badge>
-          </div>
-          {audit.brand.location && <p className="text-muted-foreground mt-1">{audit.brand.location}</p>}
-        </div>
-        <div className="flex items-center gap-2">
-          {audit.status === "COMPLETE" && (
-            <Button onClick={handleExport} variant="outline">
-              <Download className="mr-2 h-4 w-4" /> Export XLSX
-            </Button>
-          )}
-          <DeleteAuditButton
-            auditId={audit.id}
-            brandName={audit.brand.name}
-            variant="full"
-            onDeleted={() => router.push("/")}
-          />
-        </div>
-      </div>
-
-      {summary && (
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Mention Rate</CardTitle>
-              <Eye className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold font-mono">{summary.mentionRate}%</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Visibility</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold font-mono">
-                {analysis?.brand_visibility?.overall_score ?? "—"}/100
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Sentiment</CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold font-mono">
-                {analysis?.sentiment_analysis?.sentiment_score ?? "—"}/100
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Top Threat</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold font-mono truncate">
-                {summary.topCompetitors?.[0]?.name ?? "—"}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          {analysis && <TabsTrigger value="analysis">Analysis</TabsTrigger>}
-          {analysis && <TabsTrigger value="recommendations">Recommendations</TabsTrigger>}
-          {analysis?.benchmark && <TabsTrigger value="benchmark">Benchmark</TabsTrigger>}
-          <TabsTrigger value="raw">Raw Data</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview">
-          <OverviewTab audit={audit} />
-        </TabsContent>
-        <TabsContent value="raw">
-          <RawDataTab prompts={audit.prompts} />
-        </TabsContent>
-        {analysis && (
-          <TabsContent value="analysis">
-            <AnalysisTab analysis={analysis} />
-          </TabsContent>
-        )}
-        {analysis && (
-          <TabsContent value="recommendations">
-            <RecommendationsTab recommendations={analysis.recommendations} />
-          </TabsContent>
-        )}
-        {analysis?.benchmark && (
-          <TabsContent value="benchmark">
-            <BenchmarkTab benchmark={analysis.benchmark} />
-          </TabsContent>
-        )}
-      </Tabs>
-    </div>
-  );
-}
-
-function RecommendationsTab({ recommendations }: { recommendations: AnalysisOutput["recommendations"] }) {
-  if (!recommendations) return null;
+  const visibleSections = SECTIONS.filter((s) => {
+    if (s.id === "benchmark" && !analysis?.benchmark) return false;
+    if (["visibility", "sentiment", "competitive", "recommendations"].includes(s.id) && !analysis) return false;
+    return true;
+  });
 
   return (
-    <div className="space-y-6 mt-4">
-      {recommendations.new_content_to_create?.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>New Content to Create</CardTitle></CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recommendations.new_content_to_create.map((item, i) => (
-                <div key={i} className="rounded border p-3 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant={item.priority === "high" ? "destructive" : item.priority === "medium" ? "warning" : "secondary"}>
-                      {item.priority}
-                    </Badge>
-                    <Badge variant="outline">{item.type}</Badge>
-                    <span className="font-medium">{item.topic}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{item.rationale}</p>
-                  {item.suggested_scope && <p className="text-xs text-muted-foreground">Scope: {item.suggested_scope}</p>}
-                </div>
-              ))}
+    <div className="flex gap-6 min-h-[calc(100vh-5rem)]">
+      {/* Sidebar */}
+      <aside className="w-56 shrink-0 border-r border-border pr-4">
+        <div className="sticky top-20 space-y-6">
+          <div>
+            <h2 className="font-semibold text-lg truncate">{audit.brand.name}</h2>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant={audit.status === "COMPLETE" ? "success" : "secondary"} className="text-xs">
+                {audit.status.replace("_", " ")}
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            {audit.brand.location && <p className="text-xs text-muted-foreground mt-1">{audit.brand.location}</p>}
+          </div>
 
-      {recommendations.quick_wins?.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>Quick Wins</CardTitle></CardHeader>
-          <CardContent>
-            <ol className="list-decimal list-inside space-y-2">
-              {recommendations.quick_wins.map((item, i) => (
-                <li key={i} className="text-sm">{item}</li>
-              ))}
-            </ol>
-          </CardContent>
-        </Card>
-      )}
+          <nav className="space-y-1">
+            {visibleSections.map((section) => {
+              const Icon = section.icon;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={cn(
+                    "flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    activeSection === section.id
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {section.label}
+                </button>
+              );
+            })}
+          </nav>
 
-      {recommendations.long_term_plays?.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>Long-Term Plays</CardTitle></CardHeader>
-          <CardContent>
-            <ol className="list-decimal list-inside space-y-2">
-              {recommendations.long_term_plays.map((item, i) => (
-                <li key={i} className="text-sm">{item}</li>
-              ))}
-            </ol>
-          </CardContent>
-        </Card>
-      )}
+          <div className="space-y-2 pt-4 border-t border-border">
+            {audit.status === "COMPLETE" && (
+              <Button onClick={handleExport} variant="outline" size="sm" className="w-full justify-start">
+                <Download className="mr-2 h-4 w-4" /> Export
+              </Button>
+            )}
+            <DeleteAuditButton
+              auditId={audit.id}
+              brandName={audit.brand.name}
+              variant="full"
+              onDeleted={() => router.push("/")}
+            />
+          </div>
+        </div>
+      </aside>
 
-      {recommendations.structured_data_recommendations?.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>Structured Data / Technical</CardTitle></CardHeader>
-          <CardContent>
-            <ul className="list-disc list-inside space-y-1">
-              {recommendations.structured_data_recommendations.map((item, i) => (
-                <li key={i} className="text-sm">{item}</li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+      {/* Main Content */}
+      <div className="flex-1 min-w-0 space-y-6">
+        {/* Score Cards */}
+        {summary && activeSection === "overview" && (
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Mention Rate</CardTitle>
+                <Eye className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold font-mono bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                  {summary.mentionRate}%
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Visibility</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold font-mono bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                  {analysis?.brand_visibility?.overall_score ?? "—"}/100
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Sentiment</CardTitle>
+                <Shield className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold font-mono bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                  {analysis?.sentiment_analysis?.sentiment_score ?? "—"}/100
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {analysis?.benchmark ? "Rank" : "Top Threat"}
+                </CardTitle>
+                {analysis?.benchmark ? <Trophy className="h-4 w-4 text-muted-foreground" /> : <AlertTriangle className="h-4 w-4 text-muted-foreground" />}
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold font-mono bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+                  {analysis?.benchmark
+                    ? `#${analysis.benchmark.rank} of ${analysis.benchmark.totalCompetitors}`
+                    : summary.topCompetitors?.[0]?.name ?? "—"}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-      {recommendations.third_party_actions?.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>Third-Party Actions</CardTitle></CardHeader>
-          <CardContent>
-            <ul className="list-disc list-inside space-y-1">
-              {recommendations.third_party_actions.map((item, i) => (
-                <li key={i} className="text-sm">{item}</li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+        {/* Section Content */}
+        {activeSection === "overview" && <OverviewSection audit={audit} />}
+        {activeSection === "visibility" && analysis && <VisibilitySection analysis={analysis} />}
+        {activeSection === "sentiment" && analysis && <SentimentSection analysis={analysis} />}
+        {activeSection === "competitive" && analysis && <CompetitiveSection analysis={analysis} />}
+        {activeSection === "benchmark" && analysis?.benchmark && <BenchmarkTab benchmark={analysis.benchmark} />}
+        {activeSection === "recommendations" && analysis && <RecommendationsSection recommendations={analysis.recommendations} />}
+        {activeSection === "raw" && <RawDataTab prompts={audit.prompts} />}
+      </div>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Plus, TrendingUp, Eye, Shield, AlertTriangle, Trophy } from "lucide-react";
+import { BarChart3, Plus } from "lucide-react";
 import { DeleteAuditButton } from "@/components/delete-audit-button";
 
 const statusColors: Record<string, string> = {
@@ -24,29 +24,11 @@ export default async function DashboardPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const latestComplete = audits.find((a) => a.status === "COMPLETE");
-  const summary = latestComplete?.summary as Record<string, unknown> | null;
-  const analysis = latestComplete?.analysis as Record<string, unknown> | null;
-
-  const mentionRate = summary ? (summary.mentionRate as number) : null;
-  const visScore = analysis
-    ? ((analysis.brand_visibility as Record<string, unknown>)?.overall_score as number)
-    : null;
-  const sentimentScore = analysis
-    ? ((analysis.sentiment_analysis as Record<string, unknown>)?.sentiment_score as number)
-    : null;
-
-  const topCompetitors = summary
-    ? (summary.topCompetitors as Array<{ name: string; count: number }>)?.slice(0, 3)
-    : [];
-
-  const benchmark = analysis?.benchmark as { rank: number; totalCompetitors: number } | undefined;
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <h1 className="text-3xl font-bold">Audits</h1>
           <p className="text-muted-foreground mt-1">Answer Engine Optimization audits</p>
         </div>
         <Link href="/audits/new">
@@ -56,69 +38,6 @@ export default async function DashboardPage() {
           </Button>
         </Link>
       </div>
-
-      {latestComplete && (
-        <>
-          <div className="grid gap-4 md:grid-cols-5">
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Mention Rate</CardTitle>
-                <Eye className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold font-mono bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{mentionRate ?? "—"}%</div>
-                <p className="text-xs text-muted-foreground mt-1">Across all providers</p>
-              </CardContent>
-            </Card>
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Visibility Score</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold font-mono bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">{visScore ?? "—"}/100</div>
-                <p className="text-xs text-muted-foreground mt-1">Brand visibility index</p>
-              </CardContent>
-            </Card>
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Sentiment</CardTitle>
-                <Shield className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold font-mono bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">{sentimentScore ?? "—"}/100</div>
-                <p className="text-xs text-muted-foreground mt-1">Overall sentiment score</p>
-              </CardContent>
-            </Card>
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Top Threat</CardTitle>
-                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold font-mono truncate bg-gradient-to-r from-red-400 to-rose-400 bg-clip-text text-transparent">
-                  {topCompetitors?.[0]?.name ?? "—"}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {topCompetitors?.[0]?.count ? `${topCompetitors[0].count} mentions` : "Most mentioned competitor"}
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Competitive Rank</CardTitle>
-                <Trophy className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold font-mono bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                  {benchmark ? `#${benchmark.rank} of ${benchmark.totalCompetitors}` : "—"}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">vs competitive set</p>
-              </CardContent>
-            </Card>
-          </div>
-        </>
-      )}
 
       <Card>
         <CardHeader>

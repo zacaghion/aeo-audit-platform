@@ -21,6 +21,7 @@ import {
   GRID_STYLE,
 } from "@/lib/chart-theme";
 import type { AnalysisOutput } from "@/types";
+import { METRIC_DEFINITIONS } from "@/lib/metric-definitions";
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 
@@ -176,16 +177,19 @@ export function SentimentSection({ analysis }: { analysis: AnalysisOutput }) {
         <CardHeader>
           <CardTitle className="text-white">Sentiment Score</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center gap-6">
-          <div className="relative flex items-center justify-center">
-            <ScoreRing score={sa.sentiment_score} />
+        <CardContent className="flex flex-col items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-6">
+            <div className="relative flex items-center justify-center">
+              <ScoreRing score={sa.sentiment_score} />
+            </div>
+            <Badge
+              variant={sentimentBadgeVariant(sa.overall_sentiment)}
+              className="text-sm px-3 py-1 capitalize"
+            >
+              {sa.overall_sentiment}
+            </Badge>
           </div>
-          <Badge
-            variant={sentimentBadgeVariant(sa.overall_sentiment)}
-            className="text-sm px-3 py-1 capitalize"
-          >
-            {sa.overall_sentiment}
-          </Badge>
+          <p className="text-xs text-gray-500 text-center max-w-md">{METRIC_DEFINITIONS.sentiment}</p>
         </CardContent>
       </Card>
 

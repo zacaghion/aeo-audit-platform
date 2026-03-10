@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Download, Eye, TrendingUp, Shield, AlertTriangle, Trophy,
-  LayoutDashboard, MessageSquare, Swords, Lightbulb, Database,
+  LayoutDashboard, MessageSquare, Swords, Lightbulb, Database, HelpCircle,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeleteAuditButton } from "@/components/delete-audit-button";
 import { useCountUp } from "@/lib/use-count-up";
+import { METRIC_DEFINITIONS } from "@/lib/metric-definitions";
 import { OverviewSection } from "./overview-tab";
 import { VisibilitySection } from "./visibility-section";
 import { SentimentSection } from "./sentiment-section";
@@ -146,10 +148,14 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
       <div className="flex-1 min-w-0 space-y-6">
         {/* Score Cards */}
         {summary && activeSection === "overview" && (
+          <TooltipProvider delayDuration={200}>
           <div className="grid gap-4 md:grid-cols-5">
             <Card className="bg-[#111827] border border-[#1F2937] rounded-xl border-t-2 border-t-emerald-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider">Mention Rate</CardTitle>
+                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  Mention Rate
+                  <Tooltip><TooltipTrigger asChild><HelpCircle className="h-3.5 w-3.5 text-gray-500 cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[220px] text-xs text-gray-300">{METRIC_DEFINITIONS.mentionRate}</TooltipContent></Tooltip>
+                </CardTitle>
                 <Eye className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -160,7 +166,10 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
             </Card>
             <Card className="md:col-span-2 bg-[#111827] border border-[#1F2937] rounded-xl border-t-2 border-t-indigo-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider">Visibility</CardTitle>
+                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  Visibility
+                  <Tooltip><TooltipTrigger asChild><HelpCircle className="h-3.5 w-3.5 text-gray-500 cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[260px] text-xs text-gray-300">{METRIC_DEFINITIONS.visibility}</TooltipContent></Tooltip>
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -171,7 +180,10 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
             </Card>
             <Card className="bg-[#111827] border border-[#1F2937] rounded-xl border-t-2 border-t-violet-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider">Sentiment</CardTitle>
+                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  Sentiment
+                  <Tooltip><TooltipTrigger asChild><HelpCircle className="h-3.5 w-3.5 text-gray-500 cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs text-gray-300">{METRIC_DEFINITIONS.sentiment}</TooltipContent></Tooltip>
+                </CardTitle>
                 <Shield className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -182,8 +194,11 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
             </Card>
             <Card className="bg-[#111827] border border-[#1F2937] rounded-xl border-t-2 border-t-amber-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <CardTitle className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                   {analysis?.benchmark ? "Rank" : "Top Threat"}
+                  {analysis?.benchmark && (
+                    <Tooltip><TooltipTrigger asChild><HelpCircle className="h-3.5 w-3.5 text-gray-500 cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[200px] text-xs text-gray-300">{METRIC_DEFINITIONS.rank}</TooltipContent></Tooltip>
+                  )}
                 </CardTitle>
                 {analysis?.benchmark ? <Trophy className="h-4 w-4 text-muted-foreground" /> : <AlertTriangle className="h-4 w-4 text-muted-foreground" />}
               </CardHeader>
@@ -196,6 +211,7 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
               </CardContent>
             </Card>
           </div>
+          </TooltipProvider>
         )}
 
         {/* Section Content */}

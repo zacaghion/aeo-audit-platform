@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import type { AnalysisOutput } from "@/types";
 import { PROVIDER_COLORS, getProviderColor, CHART_TOOLTIP_STYLE, CHART_ANIM, AXIS_STYLE, GRID_STYLE } from "@/lib/chart-theme";
+import { METRIC_DEFINITIONS } from "@/lib/metric-definitions";
 
 function ScoreRing({ score }: { score: number }) {
   const radius = 54;
@@ -93,10 +94,11 @@ export function VisibilitySection({ analysis }: { analysis: AnalysisOutput }) {
         <CardHeader>
           <CardTitle>Overall Visibility Score</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center">
+        <CardContent className="flex flex-col items-center justify-center gap-3">
           <div className="relative flex items-center justify-center">
             <ScoreRing score={vis.overall_score} />
           </div>
+          <p className="text-xs text-gray-500 text-center max-w-md">{METRIC_DEFINITIONS.visibility}</p>
         </CardContent>
       </Card>
 

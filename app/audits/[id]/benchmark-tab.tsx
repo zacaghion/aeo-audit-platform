@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Trophy } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend } from "recharts";
+import { METRIC_DEFINITIONS } from "@/lib/metric-definitions";
 
 interface BenchmarkScore {
   name: string;
@@ -76,6 +77,7 @@ export function BenchmarkTab({ benchmark }: { benchmark: BenchmarkData }) {
                   ? "You lead your competitive set in AI visibility."
                   : `${sorted[0]?.name} leads with a visibility score of ${sorted[0]?.visibility}. You trail by ${sorted[0]?.visibility - (sorted.find((s) => s.isTarget)?.visibility ?? 0)} points.`}
               </p>
+              <p className="text-xs text-gray-500 mt-2 max-w-md">{METRIC_DEFINITIONS.rank}</p>
             </div>
           </div>
         </CardContent>

@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, Eye, TrendingUp, Shield, AlertTriangle } from "lucide-react";
+import { DeleteAuditButton } from "@/components/delete-audit-button";
 import { OverviewTab } from "./overview-tab";
 import { RawDataTab } from "./raw-data-tab";
 import { AnalysisTab } from "./analysis-tab";
@@ -41,6 +43,7 @@ interface AuditData {
 }
 
 export function AuditDetail({ audit }: { audit: AuditData }) {
+  const router = useRouter();
   const summary = audit.summary;
   const analysis = audit.analysis;
 
@@ -67,11 +70,19 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
           </div>
           {audit.brand.location && <p className="text-muted-foreground mt-1">{audit.brand.location}</p>}
         </div>
-        {audit.status === "COMPLETE" && (
-          <Button onClick={handleExport} variant="outline">
-            <Download className="mr-2 h-4 w-4" /> Export XLSX
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {audit.status === "COMPLETE" && (
+            <Button onClick={handleExport} variant="outline">
+              <Download className="mr-2 h-4 w-4" /> Export XLSX
+            </Button>
+          )}
+          <DeleteAuditButton
+            auditId={audit.id}
+            brandName={audit.brand.name}
+            variant="full"
+            onDeleted={() => router.push("/")}
+          />
+        </div>
       </div>
 
       {summary && (

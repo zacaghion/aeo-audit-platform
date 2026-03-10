@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Plus, TrendingUp, Eye, Shield, AlertTriangle } from "lucide-react";
+import { DeleteAuditButton } from "@/components/delete-audit-button";
 
 const statusColors: Record<string, string> = {
   PENDING: "secondary",
@@ -141,16 +142,19 @@ export default async function DashboardPage() {
                         {new Date(audit.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    {auditSummary && (
-                      <div className="text-right font-mono text-sm">
-                        <div className="text-primary font-semibold">
-                          {auditSummary.mentionRate as number}% mention rate
+                    <div className="flex items-center gap-3">
+                      {auditSummary && (
+                        <div className="text-right font-mono text-sm">
+                          <div className="text-primary font-semibold">
+                            {auditSummary.mentionRate as number}% mention rate
+                          </div>
+                          <div className="text-muted-foreground">
+                            {(auditSummary.providersQueried as string[])?.length ?? 0} providers
+                          </div>
                         </div>
-                        <div className="text-muted-foreground">
-                          {(auditSummary.providersQueried as string[])?.length ?? 0} providers
-                        </div>
-                      </div>
-                    )}
+                      )}
+                      <DeleteAuditButton auditId={audit.id} brandName={audit.brand.name} />
+                    </div>
                   </Link>
                 );
               })}

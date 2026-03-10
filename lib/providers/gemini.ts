@@ -17,7 +17,10 @@ export async function queryGemini(prompt: string): Promise<AIQueryResult> {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 4096 },
+        generationConfig: {
+          maxOutputTokens: 16384,
+          thinkingConfig: { thinkingBudget: 1024 },
+        },
       }),
     }
   );

@@ -3,6 +3,18 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { runAudit } from "@/lib/audit-runner";
+import { BUSINESS_PRESETS, type BusinessType } from "@/lib/business-presets";
+
+function resolveBusinessType(typeStr: string): BusinessType {
+  const lower = typeStr.toLowerCase();
+  if (lower.includes("hotel") || lower.includes("hostel") || lower.includes("resort")) return "hotel";
+  if (lower.includes("restaurant") || lower.includes("cafe") || lower.includes("bar") || lower.includes("food")) return "restaurant";
+  if (lower.includes("saas") || lower.includes("software") || lower.includes("app") || lower.includes("platform")) return "saas";
+  if (lower.includes("retail") || lower.includes("shop") || lower.includes("store")) return "retail";
+  if (lower.includes("clinic") || lower.includes("medical") || lower.includes("dental")) return "clinic";
+  if (lower.includes("gym") || lower.includes("fitness") || lower.includes("yoga")) return "fitness";
+  return "other";
+}
 
 export async function GET() {
   const audits = await prisma.audit.findMany({
@@ -17,16 +29,12 @@ export async function POST(req: NextRequest) {
 
   const totalPrompts = promptCount || 100;
   const scale = totalPrompts / 100;
-  const categories: Record<string, number> = {
-    Discovery: Math.round(20 * scale),
-    Comparison: Math.round(15 * scale),
-    Brand: Math.round(15 * scale),
-    Location: Math.round(10 * scale),
-    Experience: Math.round(15 * scale),
-    Amenity: Math.round(10 * scale),
-    Practical: Math.round(10 * scale),
-    Dining: Math.round(5 * scale),
-  };
+  const businessType = resolveBusinessType(brand.type || "other");
+  const preset = BUSINESS_PRESETS[businessType];
+  const categories: Record<string, number> = {};
+  for (const [cat, count] of Object.entries(preset.categories)) {
+    categories[cat] = Math.round(count * scale);
+  }
 
   const brandRecord = await prisma.brand.create({
     data: {

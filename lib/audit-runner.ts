@@ -3,6 +3,7 @@ import { decrypt } from "@/lib/crypto";
 import { providerQueryMap } from "@/lib/providers";
 import { generatePrompts } from "@/lib/prompt-generator";
 import { analyzeResponse, computeAuditSummary } from "@/lib/analysis";
+import { generateAnalysis } from "@/lib/analysis-engine";
 import type { ProviderName } from "@/lib/providers";
 import type { Prisma } from "@prisma/client";
 
@@ -212,11 +213,38 @@ export async function runAudit(auditId: string) {
 
       const fullSummary = { ...summary, topCompetitors };
 
+      // Generate full analysis with visibility, sentiment, recommendations
+      const analysisInput = fullAudit.prompts.map((p) => ({
+        promptNumber: p.promptNumber,
+        promptText: p.promptText,
+        category: p.category,
+        responses: p.responses.filter((r) => r.status === "success").map((r) => ({
+          provider: r.provider,
+          answer: r.answer,
+          brandMentioned: r.brandMentioned,
+          mentionPosition: r.mentionPosition,
+          mentionSentiment: r.mentionSentiment,
+          competitorsMentioned: r.competitorsMentioned as string[],
+          competitorCount: r.competitorCount,
+          answerLength: r.answerLength,
+          status: r.status,
+        })),
+      }));
+
+      const analysis = generateAnalysis(analysisInput, {
+        name: brand.name,
+        location: brand.location,
+        category: brand.category,
+        features: brand.features,
+        competitors: brand.competitors,
+      });
+
       await prisma.audit.update({
         where: { id: auditId },
         data: {
           status: "COMPLETE",
           summary: fullSummary,
+          analysis: analysis as unknown as Prisma.InputJsonValue,
           completedAt: new Date(),
         },
       });

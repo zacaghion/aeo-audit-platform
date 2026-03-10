@@ -5,6 +5,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface RawDataProps {
@@ -137,7 +138,18 @@ export function RawDataTab({ prompts }: RawDataProps) {
                   {expanded === row.key ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </TableCell>
                 <TableCell className="font-mono">{row.promptNumber}</TableCell>
-                <TableCell className="max-w-[200px] truncate" title={row.promptText}>{row.promptText}</TableCell>
+                <TableCell className="max-w-[200px]">
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="block truncate cursor-default">{row.promptText}</span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-md whitespace-normal text-sm">
+                        {row.promptText}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
                 <TableCell><Badge variant="outline" className="text-xs">{row.category}</Badge></TableCell>
                 <TableCell className="capitalize">{row.provider}</TableCell>
                 <TableCell>

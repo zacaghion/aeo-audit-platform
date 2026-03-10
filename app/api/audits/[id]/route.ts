@@ -46,3 +46,14 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   runAudit(audit.id).catch((e) => console.error("Resume audit failed:", e));
   return NextResponse.json({ message: "Audit resumed (duplicates cleaned)", auditId: audit.id });
 }
+
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const { status } = await req.json();
+  if (!["ERROR", "COMPLETE"].includes(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+  const audit = await prisma.audit.findUnique({ where: { id: params.id } });
+  if (!audit) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  await prisma.audit.update({ where: { id: params.id }, data: { status } });
+  return NextResponse.json({ message: `Audit marked as ${status}` });
+}

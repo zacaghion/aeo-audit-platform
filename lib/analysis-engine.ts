@@ -38,7 +38,7 @@ async function getKey(provider: string): Promise<string | null> {
   }
 }
 
-async function callClaude(apiKey: string, system: string, userMessage: string): Promise<string> {
+async function callClaude(apiKey: string, system: string, userMessage: string, maxTokens: number = 4096): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -48,7 +48,7 @@ async function callClaude(apiKey: string, system: string, userMessage: string): 
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
+      max_tokens: maxTokens,
       system,
       messages: [{ role: "user", content: userMessage }],
     }),
@@ -324,7 +324,8 @@ Based on your knowledge of ${brand.website || brand.name + "'s website"}, produc
   }
 }
 
-Generate 3-5 items for existing_content_to_update (most important), 3-5 for new_content_to_create, 3-5 quick_wins, 2-3 long_term_plays. Every item must reference specific audit findings.`
+Generate 3-5 items for existing_content_to_update (most important), 3-5 for new_content_to_create, 3-5 quick_wins, 2-3 long_term_plays. Every item must reference specific audit findings.`,
+          8192
         );
 
         try {

@@ -331,9 +331,15 @@ Generate 3-5 items for existing_content_to_update (most important), 3-5 for new_
           const cleaned = recsText.replace(/^```json?\n?/, "").replace(/\n?```$/, "").trim();
           const recsJson = JSON.parse(cleaned);
           if (recsJson.recommendations) {
+            const llmRecs = recsJson.recommendations;
+            const fallback = heuristic.recommendations;
             merged.recommendations = {
-              ...heuristic.recommendations,
-              ...recsJson.recommendations,
+              existing_content_to_update: llmRecs.existing_content_to_update?.length > 0 ? llmRecs.existing_content_to_update : fallback.existing_content_to_update,
+              new_content_to_create: llmRecs.new_content_to_create?.length > 0 ? llmRecs.new_content_to_create : fallback.new_content_to_create,
+              quick_wins: llmRecs.quick_wins?.length > 0 ? llmRecs.quick_wins : fallback.quick_wins,
+              long_term_plays: llmRecs.long_term_plays?.length > 0 ? llmRecs.long_term_plays : fallback.long_term_plays,
+              structured_data_recommendations: llmRecs.structured_data_recommendations?.length > 0 ? llmRecs.structured_data_recommendations : fallback.structured_data_recommendations,
+              third_party_actions: llmRecs.third_party_actions?.length > 0 ? llmRecs.third_party_actions : fallback.third_party_actions,
             };
           }
         } catch {

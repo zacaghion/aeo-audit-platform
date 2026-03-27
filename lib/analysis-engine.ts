@@ -30,12 +30,15 @@ interface BrandData {
 
 async function getKey(provider: string): Promise<string | null> {
   const record = await prisma.apiKey.findUnique({ where: { provider } });
-  if (!record) return null;
-  try {
-    return decrypt(record.encryptedKey, record.iv, record.authTag);
-  } catch {
-    return null;
+  if (record) {
+    try {
+      return decrypt(record.encryptedKey, record.iv, record.authTag);
+    } catch { /* fall through */ }
   }
+  if (provider.startsWith("claude-")) {
+    return getKey("claude");
+  }
+  return null;
 }
 
 async function callClaude(apiKey: string, system: string, userMessage: string, maxTokens: number = 4096): Promise<string> {

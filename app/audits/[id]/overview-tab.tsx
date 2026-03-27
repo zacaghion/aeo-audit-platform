@@ -143,6 +143,7 @@ export function OverviewTab({ audit }: Props) {
                 <PolarGrid stroke="#1F2937" />
                 <PolarAngleAxis dataKey="category" tick={{ fontSize: 11, fill: "#6B7280" }} />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: "#6B7280" }} />
+                <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                 <Radar dataKey="rate" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} {...CHART_ANIM} />
               </RadarChart>
             </ResponsiveContainer>

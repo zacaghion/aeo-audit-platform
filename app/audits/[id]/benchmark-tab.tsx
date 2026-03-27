@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Trophy } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend } from "recharts";
+import { CHART_TOOLTIP_STYLE } from "@/lib/chart-theme";
 import { METRIC_DEFINITIONS } from "@/lib/metric-definitions";
 
 interface BenchmarkScore {
@@ -91,7 +92,7 @@ export function BenchmarkTab({ benchmark }: { benchmark: BenchmarkData }) {
               <BarChart data={barData} layout="vertical" margin={{ left: 10 }}>
                 <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "#E5E7EB" }} />
                 <Bar dataKey="visibility" radius={[0, 4, 4, 0]}>
                   {barData.map((d, i) => (
                     <Cell key={i} fill={d.isTarget ? "#6366f1" : "hsl(var(--muted-foreground)/0.4)"} />
@@ -110,6 +111,7 @@ export function BenchmarkTab({ benchmark }: { benchmark: BenchmarkData }) {
                 <PolarGrid stroke="hsl(var(--border))" />
                 <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                 {sorted.map((s, i) => (
                   <Radar
                     key={s.name}

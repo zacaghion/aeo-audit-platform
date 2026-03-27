@@ -23,6 +23,7 @@ export const CHART_TOOLTIP_STYLE = {
   border: "1px solid #374151",
   borderRadius: 8,
   boxShadow: "0 10px 25px rgba(0,0,0,0.4)",
+  color: "#E5E7EB",
 };
 
 export const CHART_ANIM = {

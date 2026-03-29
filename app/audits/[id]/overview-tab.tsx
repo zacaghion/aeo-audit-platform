@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import type { AuditSummary } from "@/types";
 import { PROVIDER_COLORS, getProviderColor, CHART_TOOLTIP_STYLE, CHART_ANIM, AXIS_STYLE, GRID_STYLE } from "@/lib/chart-theme";
+import { INTENT_COLORS, VALID_INTENTS, hasIntentData } from "@/lib/category-utils";
 
 function getHeatCellStyle(rate: number, providerColor: string): { backgroundColor: string; textClass: string } {
   if (rate === 0) return { backgroundColor: "#1F2937", textClass: "text-gray-600" };
@@ -26,10 +27,12 @@ interface Props {
     summary: AuditSummary | null;
     prompts: Array<{
       category: string;
+      intent?: string;
       responses: Array<{
         provider: string;
         brandMentioned: boolean;
         competitorsMentioned: string[];
+        status?: string;
       }>;
     }>;
   };
@@ -237,6 +240,45 @@ export function OverviewTab({ audit }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Intent Performance (only for audits with intent data) */}
+      {hasIntentData(audit.prompts) && (() => {
+        const intentData = VALID_INTENTS.map((intent) => {
+          let total = 0, mentioned = 0;
+          for (const p of audit.prompts) {
+            if (p.intent?.toLowerCase() !== intent) continue;
+            for (const r of p.responses) {
+              if (r.status && r.status !== "success") continue;
+              total++;
+              if (r.brandMentioned) mentioned++;
+            }
+          }
+          return { intent, rate: total > 0 ? Math.round((mentioned / total) * 100) : 0 };
+        });
+        return (
+          <Card className="bg-[#111827] border border-[#1F2937] rounded-xl">
+            <CardHeader>
+              <CardTitle className="text-base text-white">Intent Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={intentData} layout="vertical" margin={{ left: 90, right: 16 }}>
+                  <CartesianGrid {...GRID_STYLE} />
+                  <XAxis type="number" domain={[0, 100]} {...AXIS_STYLE} />
+                  <YAxis type="category" dataKey="intent" {...AXIS_STYLE} tick={{ fontSize: 11, fill: "#9CA3AF" }} width={85} />
+                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number) => [`${v}%`, "Mention Rate"]} />
+                  <Bar dataKey="rate" radius={[0, 4, 4, 0]} barSize={20} {...CHART_ANIM}>
+                    {intentData.map((d) => (
+                      <Cell key={d.intent} fill={INTENT_COLORS[d.intent] || "#6B7280"} />
+                    ))}
+                    <LabelList position="right" fill="#fff" fontSize={11} fontWeight={600} formatter={(v: number) => `${v}%`} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        );
+      })()}
     </div>
   );
 }

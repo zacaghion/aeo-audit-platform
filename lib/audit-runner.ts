@@ -109,6 +109,7 @@ export async function runAudit(auditId: string) {
         features: brand.features,
         competitors: brand.competitors,
         priceRange: brand.priceRange,
+        website: brand.website || undefined,
       };
 
       // Try Claude first, fall back to templates

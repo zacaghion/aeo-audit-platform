@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Copy, Check, ExternalLink, ChevronRight, Loader2, Sparkles } from "lucide-react";
 import { PROVIDER_COLORS } from "@/lib/chart-theme";
 import { cn } from "@/lib/utils";
+import { intentBadgeClass, hasIntentData, VALID_INTENTS } from "@/lib/category-utils";
 import type { AnalysisOutput } from "@/types";
 
 /* ── Helpers ── */
@@ -412,6 +413,24 @@ export function RecommendationsSection({ recommendations, brand, analysis, promp
                       ))}
                     </div>
                   )}
+                  {/* Intent distribution for target queries */}
+                  {hasIntentData(prompts) && item.target_queries?.length > 0 && (() => {
+                    const targetPrompts = prompts.filter((p) => item.target_queries.includes(p.promptNumber));
+                    const intentCounts: Record<string, number> = {};
+                    for (const p of targetPrompts) {
+                      if (p.intent) intentCounts[p.intent] = (intentCounts[p.intent] || 0) + 1;
+                    }
+                    const total = targetPrompts.length;
+                    if (total === 0) return null;
+                    const dominant = Object.entries(intentCounts).sort(([,a], [,b]) => b - a)[0];
+                    if (!dominant || (dominant[1] / total) < 0.5) return null;
+                    const pct = Math.round((dominant[1] / total) * 100);
+                    return (
+                      <p className="text-xs text-gray-400">
+                        Affects primarily <Badge className={`text-xs capitalize ${intentBadgeClass(dominant[0])}`}>{dominant[0]}</Badge> queries ({pct}%)
+                      </p>
+                    );
+                  })()}
 
                   {/* Generate Content button */}
                   {!content && (

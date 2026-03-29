@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Download, Eye, TrendingUp, Shield, AlertTriangle, Trophy,
-  LayoutDashboard, MessageSquare, Swords, Lightbulb, Database, HelpCircle,
+  LayoutDashboard, MessageSquare, Swords, Lightbulb, Database, HelpCircle, Target,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeleteAuditButton } from "@/components/delete-audit-button";
@@ -21,6 +21,8 @@ import { CompetitiveSection } from "./competitive-section";
 import { BenchmarkTab } from "./benchmark-tab";
 import { RecommendationsSection } from "./recommendations-section";
 import { RawDataTab } from "./raw-data-tab";
+import { IntentSection } from "./intent-section";
+import { hasIntentData } from "@/lib/category-utils";
 import type { AuditSummary, AnalysisOutput } from "@/types";
 
 interface AuditData {
@@ -57,6 +59,7 @@ const SECTIONS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "visibility", label: "Visibility", icon: Eye },
   { id: "sentiment", label: "Sentiment", icon: MessageSquare },
+  { id: "intent", label: "Intent", icon: Target },
   { id: "competitive", label: "Competitive", icon: Swords },
   { id: "benchmark", label: "Benchmark", icon: Trophy },
   { id: "recommendations", label: "Improve", icon: Lightbulb },
@@ -88,6 +91,7 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
 
   const visibleSections = SECTIONS.filter((s) => {
     if (s.id === "benchmark" && !analysis?.benchmark) return false;
+    if (s.id === "intent" && !hasIntentData(audit.prompts)) return false;
     if (["visibility", "sentiment", "competitive", "recommendations"].includes(s.id) && !analysis) return false;
     return true;
   });
@@ -218,6 +222,7 @@ export function AuditDetail({ audit }: { audit: AuditData }) {
         {activeSection === "overview" && <OverviewSection audit={audit} />}
         {activeSection === "visibility" && analysis && <VisibilitySection analysis={analysis} />}
         {activeSection === "sentiment" && analysis && <SentimentSection analysis={analysis} />}
+        {activeSection === "intent" && <IntentSection prompts={audit.prompts} />}
         {activeSection === "competitive" && analysis && <CompetitiveSection analysis={analysis} />}
         {activeSection === "benchmark" && analysis?.benchmark && <BenchmarkTab benchmark={analysis.benchmark} />}
         {activeSection === "recommendations" && analysis && (

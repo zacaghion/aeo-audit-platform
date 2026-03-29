@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { intentBadgeClass, hasIntentData, displayCategory } from "@/lib/category-utils";
 
 interface RawDataProps {
   prompts: Array<{
     promptNumber: number;
     promptText: string;
     category: string;
+    intent?: string;
     expectedMention: string;
     responses: Array<{
       id: string;
@@ -42,12 +44,15 @@ const PAGE_SIZE = 50;
 
 export function RawDataTab({ prompts }: RawDataProps) {
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [intentFilter, setIntentFilter] = useState("all");
   const [providerFilter, setProviderFilter] = useState("all");
   const [mentionFilter, setMentionFilter] = useState("all");
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  const showIntent = hasIntentData(prompts);
   const categories = Array.from(new Set(prompts.map((p) => p.category)));
+  const intents = Array.from(new Set(prompts.map((p) => p.intent).filter(Boolean))) as string[];
   const providers = Array.from(new Set(prompts.flatMap((p) => p.responses.map((r) => r.provider))));
 
   const rows = useMemo(() => {
@@ -56,6 +61,7 @@ export function RawDataTab({ prompts }: RawDataProps) {
       promptNumber: number;
       promptText: string;
       category: string;
+      intent?: string;
       provider: string;
       model: string;
       answer: string;
@@ -71,6 +77,7 @@ export function RawDataTab({ prompts }: RawDataProps) {
     for (const p of prompts) {
       for (const r of p.responses) {
         if (categoryFilter !== "all" && p.category !== categoryFilter) continue;
+        if (intentFilter !== "all" && p.intent !== intentFilter) continue;
         if (providerFilter !== "all" && r.provider !== providerFilter) continue;
         if (mentionFilter === "yes" && !r.brandMentioned) continue;
         if (mentionFilter === "no" && r.brandMentioned) continue;
@@ -80,6 +87,7 @@ export function RawDataTab({ prompts }: RawDataProps) {
           promptNumber: p.promptNumber,
           promptText: p.promptText,
           category: p.category,
+          intent: p.intent,
           expectedMention: p.expectedMention,
           ...r,
           competitorsMentioned: r.competitorsMentioned as string[],
@@ -87,7 +95,7 @@ export function RawDataTab({ prompts }: RawDataProps) {
       }
     }
     return all;
-  }, [prompts, categoryFilter, providerFilter, mentionFilter]);
+  }, [prompts, categoryFilter, intentFilter, providerFilter, mentionFilter]);
 
   const totalPages = Math.ceil(rows.length / PAGE_SIZE);
   const pageRows = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -99,9 +107,18 @@ export function RawDataTab({ prompts }: RawDataProps) {
           <SelectTrigger className="w-40"><SelectValue placeholder="Category" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            {categories.map((c) => <SelectItem key={c} value={c}>{displayCategory(c)}</SelectItem>)}
           </SelectContent>
         </Select>
+        {showIntent && (
+          <Select value={intentFilter} onValueChange={(v) => { setIntentFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-40"><SelectValue placeholder="Intent" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Intents</SelectItem>
+              {intents.map((i) => <SelectItem key={i} value={i} className="capitalize">{i}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={providerFilter} onValueChange={(v) => { setProviderFilter(v); setPage(0); }}>
           <SelectTrigger className="w-40"><SelectValue placeholder="Provider" /></SelectTrigger>
           <SelectContent>
@@ -127,6 +144,7 @@ export function RawDataTab({ prompts }: RawDataProps) {
             <TableHead className="w-12">#</TableHead>
             <TableHead className="max-w-[200px]">Prompt</TableHead>
             <TableHead>Category</TableHead>
+            {showIntent && <TableHead>Intent</TableHead>}
             <TableHead>Provider</TableHead>
             <TableHead>Mentioned</TableHead>
             <TableHead>Position</TableHead>
@@ -159,17 +177,22 @@ export function RawDataTab({ prompts }: RawDataProps) {
                     </Tooltip>
                   </TooltipProvider>
                 </TableCell>
-                <TableCell><Badge variant="outline" className="text-xs">{row.category}</Badge></TableCell>
+                <TableCell><Badge variant="outline" className="text-xs">{displayCategory(row.category)}</Badge></TableCell>
+                {showIntent && (
+                  <TableCell>
+                    {row.intent ? (
+                      <Badge className={`text-xs capitalize ${intentBadgeClass(row.intent)}`}>{row.intent}</Badge>
+                    ) : (
+                      <span className="text-gray-500 text-xs">--</span>
+                    )}
+                  </TableCell>
+                )}
                 <TableCell className="capitalize">{row.provider}</TableCell>
                 <TableCell>
                   {row.brandMentioned ? (
-                    <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs rounded-full px-2 py-0.5">
-                      Yes
-                    </span>
+                    <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs rounded-full px-2 py-0.5">Yes</span>
                   ) : (
-                    <span className="bg-red-500/10 text-red-400 border border-red-500/20 text-xs rounded-full px-2 py-0.5">
-                      No
-                    </span>
+                    <span className="bg-red-500/10 text-red-400 border border-red-500/20 text-xs rounded-full px-2 py-0.5">No</span>
                   )}
                 </TableCell>
                 <TableCell className="font-mono text-xs">{row.mentionPosition || "—"}</TableCell>
@@ -179,7 +202,7 @@ export function RawDataTab({ prompts }: RawDataProps) {
               </TableRow>
               {expanded === row.key && (
                 <TableRow key={`${row.key}-exp`}>
-                  <TableCell colSpan={10} className="bg-muted/30">
+                  <TableCell colSpan={showIntent ? 11 : 10} className="bg-muted/30">
                     <div className="p-4 space-y-2">
                       <p className="text-xs text-muted-foreground">Full AI Response:</p>
                       <pre className="whitespace-pre-wrap text-sm font-mono max-h-96 overflow-y-auto">{row.answer}</pre>

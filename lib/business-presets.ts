@@ -15,14 +15,12 @@ export const BUSINESS_PRESETS: Record<BusinessType, BusinessPreset> = {
   hotel: {
     label: "Hotel / Hospitality",
     categories: {
-      Discovery: 20,
-      Comparison: 15,
       Brand: 15,
-      Location: 10,
-      Experience: 15,
-      Amenity: 10,
-      Practical: 10,
-      Dining: 5,
+      Discovery: 25,
+      Comparison: 25,
+      Features: 15,
+      Value: 10,
+      Reputation: 10,
     },
     placeholders: {
       actionVerb: "stay at",
@@ -110,14 +108,12 @@ export const BUSINESS_PRESETS: Record<BusinessType, BusinessPreset> = {
   restaurant: {
     label: "Restaurant / Dining",
     categories: {
-      Discovery: 20,
-      Comparison: 15,
       Brand: 15,
-      Location: 10,
-      Menu: 15,
-      Ambiance: 10,
-      Practical: 10,
-      Cuisine: 5,
+      Discovery: 25,
+      Comparison: 25,
+      Features: 15,
+      Value: 10,
+      Reputation: 10,
     },
     placeholders: {
       actionVerb: "eat at",
@@ -205,14 +201,12 @@ export const BUSINESS_PRESETS: Record<BusinessType, BusinessPreset> = {
   saas: {
     label: "SaaS / Software",
     categories: {
-      Discovery: 20,
-      Comparison: 20,
       Brand: 15,
+      Discovery: 25,
+      Comparison: 25,
       Features: 15,
-      Pricing: 10,
-      Integration: 10,
-      Support: 5,
-      Security: 5,
+      Value: 10,
+      Reputation: 10,
     },
     placeholders: {
       actionVerb: "use",
@@ -302,14 +296,12 @@ export const BUSINESS_PRESETS: Record<BusinessType, BusinessPreset> = {
   retail: {
     label: "Retail / E-commerce",
     categories: {
-      Discovery: 20,
-      Comparison: 15,
       Brand: 15,
-      Products: 15,
-      Location: 10,
-      Experience: 10,
-      Practical: 10,
-      Value: 5,
+      Discovery: 25,
+      Comparison: 25,
+      Features: 15,
+      Value: 10,
+      Reputation: 10,
     },
     placeholders: {
       actionVerb: "visit",
@@ -397,14 +389,12 @@ export const BUSINESS_PRESETS: Record<BusinessType, BusinessPreset> = {
   clinic: {
     label: "Medical Clinic / Healthcare",
     categories: {
-      Discovery: 20,
-      Comparison: 15,
       Brand: 15,
-      Services: 15,
-      Location: 10,
-      Experience: 10,
-      Practical: 10,
-      Specialization: 5,
+      Discovery: 25,
+      Comparison: 25,
+      Features: 15,
+      Value: 10,
+      Reputation: 10,
     },
     placeholders: {
       actionVerb: "visit",
@@ -492,14 +482,12 @@ export const BUSINESS_PRESETS: Record<BusinessType, BusinessPreset> = {
   fitness: {
     label: "Gym / Fitness Center",
     categories: {
-      Discovery: 20,
-      Comparison: 15,
       Brand: 15,
-      Facilities: 15,
-      Location: 10,
-      Experience: 10,
-      Practical: 10,
-      Programs: 5,
+      Discovery: 25,
+      Comparison: 25,
+      Features: 15,
+      Value: 10,
+      Reputation: 10,
     },
     placeholders: {
       actionVerb: "visit",
@@ -587,12 +575,12 @@ export const BUSINESS_PRESETS: Record<BusinessType, BusinessPreset> = {
   other: {
     label: "Other Business",
     categories: {
+      Brand: 15,
       Discovery: 25,
-      Comparison: 20,
-      Brand: 20,
+      Comparison: 25,
       Features: 15,
-      Practical: 10,
       Value: 10,
+      Reputation: 10,
     },
     placeholders: {
       actionVerb: "visit",

@@ -97,6 +97,7 @@ interface PromptInfo {
   promptNumber: number;
   promptText: string;
   category: string;
+  intent?: string;
   responses: Array<{ brandMentioned: boolean; status: string }>;
 }
 
